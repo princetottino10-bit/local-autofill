@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ローカル入力 - プロフィール</title>
+  <link rel="stylesheet" href="../lib/base.css">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <header class="page-head">
+    <img src="../icons/icon48.png" alt="" width="36" height="36">
+    <div>
+      <h1>ローカル入力</h1>
+      <p>ここで登録した情報は、このパソコンのChromeの中だけに保存されます。外部のサーバーには送信しません。</p>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="side">
+      <h2>プロフィール</h2>
+      <ul id="profile-list" class="profile-list"></ul>
+      <button id="new-profile">＋ 新しいプロフィール</button>
+    </aside>
+
+    <section class="editor">
+      <form id="form" autocomplete="off">
+        <div class="editor-head">
+          <label class="profile-name">
+            <span>プロフィール名</span>
+            <input type="text" name="profile_name" placeholder="例：個人用" required>
+          </label>
+          <span class="active-badge" id="active-badge" hidden>使用中</span>
+        </div>
+
+        <fieldset>
+          <legend>お名前</legend>
+          <div class="grid2">
+            <label><span>姓</span><input type="text" name="last_name" placeholder="山田"></label>
+            <label><span>名</span><input type="text" name="first_name" placeholder="太郎"></label>
+            <label><span>せい（ふりがな）</span><input type="text" name="last_kana" placeholder="やまだ"></label>
+            <label><span>めい（ふりがな）</span><input type="text" name="first_kana" placeholder="たろう"></label>
+          </div>
+          <p class="hint">ふりがなはひらがなで登録してください。カタカナの欄には自動で変換して入力します。</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>生年月日・性別</legend>
+          <div class="grid2">
+            <label><span>生年月日</span><input type="date" name="birth"></label>
+            <label><span>性別</span>
+              <select name="gender">
+                <option value="">登録しない</option>
+                <option value="male">男性</option>
+                <option value="female">女性</option>
+                <option value="other">その他・回答しない</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>連絡先</legend>
+          <div class="grid2">
+            <label><span>メールアドレス</span><input type="email" name="email" placeholder="taro@example.com"></label>
+            <label><span>電話番号</span><input type="tel" name="phone" placeholder="090-1234-5678"></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>住所</legend>
+          <div class="grid2">
+            <label><span>郵便番号</span><input type="text" name="zip" placeholder="150-0001" inputmode="numeric"></label>
+            <label><span>都道府県</span><select name="pref" id="pref"><option value="">選択してください</option></select></label>
+            <label><span>市区町村</span><input type="text" name="city" placeholder="渋谷区"></label>
+            <label><span>番地</span><input type="text" name="street" placeholder="神宮前1-2-3"></label>
+            <label class="span2"><span>建物名・部屋番号</span><input type="text" name="building" placeholder="〇〇マンション101号室"></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>勤務先（任意）</legend>
+          <div class="grid2">
+            <label><span>会社名</span><input type="text" name="company"></label>
+            <label><span>部署</span><input type="text" name="department"></label>
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button type="submit" class="primary">保存</button>
+          <button type="button" id="use-profile">このプロフィールを使う</button>
+          <button type="button" id="duplicate">複製</button>
+          <span class="spacer"></span>
+          <button type="button" id="delete" class="danger">削除</button>
+        </div>
+        <p class="status" id="status" role="status"></p>
+      </form>
+    </section>
+  </main>
+
+  <section class="data">
+    <h2>データの書き出し・読み込み</h2>
+    <p class="hint">別のパソコンへの移行やバックアップ用です。書き出したファイルには個人情報が含まれるので、取り扱いに注意してください。</p>
+    <div class="actions">
+      <button id="export">ファイルに書き出す</button>
+      <button id="import">ファイルから読み込む</button>
+      <input type="file" id="import-file" accept="application/json,.json" hidden>
+    </div>
+
+    <h2>サイトごとの割り当て</h2>
+    <p class="hint">ポップアップの「欄の割り当てを確認」で保存したサイトの一覧です。</p>
+    <ul id="rules-list" class="rules-list"></ul>
+
+    <h2>キーボードショートカット</h2>
+    <p class="hint">初期設定は <kbd>Option</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>（Windowsは Alt+Shift+F）です。変更するには <code>chrome://extensions/shortcuts</code> を開いてください。</p>
+  </section>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>動画のフォームに近い例</title>
+<style>.row{display:flex;gap:20px;padding:12px;border-bottom:1px dashed #ccc}.lab{width:180px}.req{background:#c00;color:#fff;font-size:12px;padding:2px 6px;margin-left:8px}</style></head>
+<body><form>
+<div class="row"><div class="lab">お名前<span class="req">必須</span></div><div><input type="text" name="your_name" placeholder="ふるさと　太郎"></div></div>
+<div class="row"><div class="lab">ふりがな<span class="req">必須</span></div><div><input type="text" name="your_kana" placeholder="ふるさと　たろう"></div></div>
+<div class="row"><div class="lab">生まれた年</div><div><select name="birth_y"><option value="">ご選択ください</option>
+<option>1988年 昭和63年</option><option>1989年 昭和64年／平成元年</option><option>1990年 平成2年</option></select></div></div>
+<div class="row"><div class="lab">郵便番号<span class="req">必須</span></div><div>〒 <input type="text" name="p1" size="4"> - <input type="text" name="p2" size="5"> <a href="#">郵便番号から検索</a></div></div>
+<div class="row"><div class="lab">都道府県<span class="req">必須</span></div><div><select name="pr"><option value="">選択してください</option><option>北海道</option><option>東京都</option><option>大阪府</option></select></div></div>
+<div class="row"><div class="lab">市区町村<span class="req">必須</span></div><div><input type="text" name="c"></div></div>
+<div class="row"><div class="lab">番地<span class="req">必須</span></div><div><input type="text" name="s"></div></div>
+<div class="row"><div class="lab">建物名</div><div><input type="text" name="b"></div></div>
+<div class="row"><div class="lab">メールアドレス<span class="req">必須</span></div><div><input type="email" name="m"></div></div>
+<div class="row"><div class="lab">電話番号</div><div><input type="tel" name="t" placeholder="090-0000-0000"></div></div>
+<div class="row"><div class="lab">ご希望の物件名</div><div><input type="text" name="prop"></div></div>
+<div class="row"><div class="lab">お問い合わせ内容</div><div><textarea name="msg"></textarea></div></div>
+<input type="text" name="hp_email" style="display:none">
+</form></body></html>

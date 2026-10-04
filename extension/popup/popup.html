@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>ローカル入力</title>
+  <link rel="stylesheet" href="../lib/base.css">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="top">
+    <img src="../icons/icon48.png" alt="" width="28" height="28">
+    <div>
+      <h1>ローカル入力</h1>
+      <p class="host" id="host">&nbsp;</p>
+    </div>
+    <a class="link" id="open-options" href="#">プロフィール編集</a>
+  </header>
+
+  <section id="empty" class="card" hidden>
+    <p>まだプロフィールがありません。最初に自分の情報を登録してください。</p>
+    <button class="primary" id="create-profile">プロフィールを登録する</button>
+  </section>
+
+  <section id="main" hidden>
+    <label class="field">
+      <span>使うプロフィール</span>
+      <select id="profile"></select>
+    </label>
+    <button class="primary big" id="fill">このページに入力</button>
+    <p class="hint">空欄だけに入力します。送信はご自身で。<span id="sc-hint"><kbd id="shortcut">⌥⇧F</kbd> でも入力できます。</span></p>
+    <label class="check"><input type="checkbox" id="overwrite"> 入力済みの欄も上書きする</label>
+
+    <div id="result" class="result" hidden></div>
+
+    <div class="row-buttons">
+      <button id="review">欄の割り当てを確認</button>
+      <button id="undo">入力を元に戻す</button>
+    </div>
+
+    <section id="review-panel" hidden>
+      <p class="hint">違っている欄があれば選び直して保存すると、次回からこのサイトでは同じ割り当てを使います。</p>
+      <ul id="field-list" class="field-list"></ul>
+      <div class="row-buttons">
+        <button class="primary" id="save-rules">このサイト用に保存して入力し直す</button>
+        <button id="reset-rules">このサイトの指定をリセット</button>
+      </div>
+    </section>
+  </section>
+
+  <footer>データはこのパソコンの中だけに保存され、外部には送信されません。</footer>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

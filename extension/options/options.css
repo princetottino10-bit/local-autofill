@@ -1,0 +1,35 @@
+body { padding: 28px 16px 48px; }
+.page-head, .layout, .data { max-width: 920px; margin: 0 auto; }
+.page-head { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
+.page-head h1 { font-size: 20px; }
+.page-head p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+.layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: start; }
+.side, .editor, .data { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.side h2, .data h2 { font-size: 14px; margin-bottom: 8px; }
+.profile-list { list-style: none; margin: 0 0 12px; padding: 0; }
+.profile-list button { width: 100%; text-align: left; border-color: transparent; background: transparent; display: flex; justify-content: space-between; gap: 6px; }
+.profile-list button.selected { background: var(--accent-soft); border-color: var(--accent); }
+.profile-list small { color: var(--accent); font-weight: 600; }
+.side > button { width: 100%; }
+.editor-head { display: flex; align-items: end; gap: 10px; margin-bottom: 8px; }
+.profile-name { flex: 1; }
+.active-badge { background: var(--accent-soft); color: var(--accent); border-radius: 99px; padding: 2px 10px; font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+label > span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+fieldset { border: 0; border-top: 1px solid var(--border); padding: 12px 0 4px; margin: 12px 0 0; }
+legend { font-weight: 700; font-size: 14px; padding-right: 8px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.span2 { grid-column: 1 / -1; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+.spacer { flex: 1; }
+.status { min-height: 1.6em; margin: 8px 0 0; color: var(--accent); font-size: 13px; }
+.status.error { color: var(--danger); }
+.data { margin-top: 20px; }
+.data h2:not(:first-child) { margin-top: 20px; }
+.rules-list { list-style: none; padding: 0; margin: 0; }
+.rules-list li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.rules-list li.empty { color: var(--muted); border: 0; }
+code { font-size: 12px; background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+@media (max-width: 680px) {
+  .layout { grid-template-columns: 1fr; }
+  .grid2 { grid-template-columns: 1fr; }
+}
