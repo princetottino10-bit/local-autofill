@@ -166,6 +166,10 @@ await popup.click('#fill');
 await popup.waitForFunction(() => document.querySelector('#result').textContent.includes('12個'));
 check('割り当てが保存されている', (await values(form)).prop, 'テストタウン100号室');
 
+// 拡張のページからは外部通信できない（CSP connect-src 'none'）
+const net = await popup.evaluate((u) => fetch(u).then(() => 'sent', () => 'blocked'), base + 'furusato.html');
+check('拡張のページから通信できない', net, 'blocked');
+
 // 書き出しファイル
 await options.bringToFront();
 await options.reload();
