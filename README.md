@@ -1,17 +1,23 @@
 # ローカル入力（local-autofill）
 
-登録フォームや問い合わせフォームに、自分の情報（名前・ふりがな・生年月日・住所・電話・メールなど）を**ワンクリックで入力する Chrome 拡張**です。
+**名簿（CSV）から選んだ人の情報**（名前・ふりがな・生年月日・住所・電話・メールなど）を、登録フォームや申込フォームに**ワンクリックで入力する Chrome 拡張**です。
 
 - **データはパソコンの中だけ**に保存します（拡張機能内の IndexedDB）。外部のサーバーやAIには一切送信しません。
 - 拡張のページには `connect-src 'none'` を設定しており、仕組みとしても通信できません。
 - 必要な権限は `activeTab` と `scripting` だけ。ボタンを押した（またはショートカットを使った）そのタブにだけ作用します。
 - 送信ボタンは押しません。入力後の確認と送信はご自身で。
 
-| ポップアップ | プロフィール登録 |
+| ポップアップ | 名簿 |
 |---|---|
 | ![popup](docs/images/popup.png) | ![options](docs/images/options.png) |
 
 ## できること
+
+- 名簿
+  - Numbers / Excel の CSV をそのまま取り込み（UTF-8・Shift_JIS 自動判別、見出しの表記ゆれに対応）
+  - 「氏名」「ふりがな」「住所」が1列でも分割、和暦の生年月日、Excel で消えた先頭の0を補完
+  - ポップアップで名前・ふりがな・電話番号で検索 → 入力 → **「入力済みにして次の人へ」**
+  - 入力済みの記録つきで CSV に書き出し（BOM 付き UTF-8 で Excel でも文字化けしない）
 
 - 日本語フォーム向けの欄の判定
   - `autocomplete` 属性 → ラベル・直前の文字・表の見出し（th/dt）・placeholder の順に判定
@@ -23,8 +29,8 @@
 - React / Vue などで作られたフォームにも反映（入力イベントを発火）
 - 空欄だけに入力（上書きも選べる）、**元に戻す**
 - 判定が違う欄は、ポップアップの「欄の割り当てを確認」から選び直して**サイトごとに保存**
-- 複数のプロフィール（個人用・仕事用など）、JSON での書き出し・読み込み
-- ショートカット `Option + Shift + F`（Windows は `Alt + Shift + F`）
+- JSON でのバックアップ・復元
+- 選んでいる人をショートカット `Option + Shift + F`（Windows は `Alt + Shift + F`）
 
 ## 配布・インストール
 
@@ -40,7 +46,7 @@ npm run zip   # dist/local-autofill-<version>.zip ができる
 
 ```sh
 npm install
-npm test      # Playwright で判定ロジック（3種類のフォーム）と拡張機能の通し動作をテスト
+npm test      # 判定ロジック（3種類のフォーム）・CSV読み込み・拡張機能の通し動作をテスト
 npm run icons # アイコンPNGを再生成
 ```
 
@@ -51,14 +57,18 @@ extension/
   manifest.json
   background.js        ショートカット時の入力
   content/filler.js    ページに注入する判定・入力ロジック（通信なし）
-  lib/db.js            IndexedDB（プロフィール・サイト別割り当て・設定）
+  lib/db.js            IndexedDB（名簿・サイト別割り当て・設定）
+  lib/csv.js           名簿CSVの読み込み・書き出し
   lib/fill-tab.js      タブへの注入と呼び出し
   popup/               ポップアップ
-  options/             プロフィール登録画面
+  options/             名簿画面
 test/pages/            テスト用フォーム（動画の例に近いもの・表形式・React）
+test/fixtures/         テスト用の名簿CSV（UTF-8・Shift_JIS）
 ```
 
 ## 制限
+
+- 名簿は他の人の個人情報です。利用目的の範囲で扱い、Mac には FileVault（ディスクの暗号化）を設定しておくことをおすすめします。
 
 - 別ドメインの iframe 内に埋め込まれたフォームには入力できません。
 - 画像認証（CAPTCHA）や確認画面の操作は行いません。

@@ -13,20 +13,36 @@
       <h1>ローカル入力</h1>
       <p class="host" id="host">&nbsp;</p>
     </div>
-    <a class="link" id="open-options" href="#">プロフィール編集</a>
+    <a class="link" id="open-options" href="#">名簿を開く</a>
   </header>
 
   <section id="empty" class="card" hidden>
-    <p>まだプロフィールがありません。最初に自分の情報を登録してください。</p>
-    <button class="primary" id="create-profile">プロフィールを登録する</button>
+    <p>名簿がまだありません。最初にCSVを取り込むか、人を登録してください。</p>
+    <button class="primary" id="create-profile">名簿を開く</button>
   </section>
 
   <section id="main" hidden>
-    <label class="field">
-      <span>使うプロフィール</span>
-      <select id="profile"></select>
-    </label>
-    <button class="primary big" id="fill">このページに入力</button>
+    <div class="search-row">
+      <input type="search" id="search" placeholder="名前・ふりがな・電話で検索" autocomplete="off">
+      <label class="check small"><input type="checkbox" id="todo-only" checked> 未入力のみ</label>
+    </div>
+    <p class="progress" id="progress"></p>
+    <ul id="people" class="people" role="listbox" aria-label="名簿"></ul>
+
+    <div class="current card" id="current">
+      <div class="current-head">
+        <div>
+          <p class="current-name" id="current-name"></p>
+          <p class="current-sub" id="current-sub"></p>
+        </div>
+        <span class="badge" id="current-badge"></span>
+      </div>
+    </div>
+
+    <button class="primary big" id="fill">この人をページに入力</button>
+    <div class="row-buttons">
+      <button id="done-next" class="accent-outline">入力済みにして次の人へ</button>
+    </div>
     <p class="hint">空欄だけに入力します。送信はご自身で。<span id="sc-hint"><kbd id="shortcut">⌥⇧F</kbd> でも入力できます。</span></p>
     <label class="check"><input type="checkbox" id="overwrite"> 入力済みの欄も上書きする</label>
 

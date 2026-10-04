@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ローカル入力 - プロフィール</title>
+  <title>ローカル入力 - 名簿</title>
   <link rel="stylesheet" href="../lib/base.css">
   <link rel="stylesheet" href="options.css">
 </head>
@@ -12,99 +12,130 @@
     <img src="../icons/icon48.png" alt="" width="36" height="36">
     <div>
       <h1>ローカル入力</h1>
-      <p>ここで登録した情報は、このパソコンのChromeの中だけに保存されます。外部のサーバーには送信しません。</p>
+      <p>名簿はこのパソコンのChromeの中だけに保存されます。外部のサーバーには送信しません。</p>
     </div>
   </header>
 
-  <main class="layout">
-    <aside class="side">
-      <h2>プロフィール</h2>
-      <ul id="profile-list" class="profile-list"></ul>
-      <button id="new-profile">＋ 新しいプロフィール</button>
-    </aside>
+  <section class="panel roster">
+    <div class="roster-head">
+      <h2>名簿 <span class="count" id="count"></span></h2>
+      <div class="actions">
+        <button class="primary" id="import-csv">CSVを取り込む</button>
+        <button id="template">ひな形CSVをダウンロード</button>
+        <button id="export-csv">CSVに書き出す</button>
+        <input type="file" id="csv-file" accept=".csv,.tsv,.txt,text/csv" hidden>
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" id="replace-on-import"> 取り込む前に今の名簿を全部消す（上書き）</label>
+    <p class="status" id="import-status" role="status"></p>
 
-    <section class="editor">
-      <form id="form" autocomplete="off">
-        <div class="editor-head">
-          <label class="profile-name">
-            <span>プロフィール名</span>
-            <input type="text" name="profile_name" placeholder="例：個人用" required>
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="名前・ふりがな・電話・メールで検索">
+      <select id="filter">
+        <option value="all">すべて</option>
+        <option value="todo">未入力のみ</option>
+        <option value="done">入力済みのみ</option>
+      </select>
+      <button id="new-person">＋ 1人追加</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="roster-table">
+        <thead><tr><th>状態</th><th>氏名</th><th>ふりがな</th><th>電話番号</th><th>住所</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <button id="more" class="more" hidden>さらに表示</button>
+    <p class="empty" id="empty" hidden>まだ誰も登録されていません。「CSVを取り込む」か「＋ 1人追加」から登録してください。</p>
+  </section>
+
+  <section class="panel editor" id="editor" hidden>
+    <form id="form" autocomplete="off">
+      <div class="editor-head">
+        <h2 id="editor-title">編集</h2>
+        <label class="check"><input type="checkbox" name="done"> 入力済み <span class="done-at" id="done-at"></span></label>
+      </div>
+
+      <fieldset>
+        <legend>お名前</legend>
+        <div class="grid2">
+          <label><span>姓</span><input type="text" name="last_name" placeholder="山田"></label>
+          <label><span>名</span><input type="text" name="first_name" placeholder="太郎"></label>
+          <label><span>せい（ふりがな）</span><input type="text" name="last_kana" placeholder="やまだ"></label>
+          <label><span>めい（ふりがな）</span><input type="text" name="first_kana" placeholder="たろう"></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>生年月日・性別</legend>
+        <div class="grid2">
+          <label><span>生年月日</span><input type="date" name="birth"></label>
+          <label><span>性別</span>
+            <select name="gender">
+              <option value="">未登録</option>
+              <option value="male">男性</option>
+              <option value="female">女性</option>
+              <option value="other">その他・回答しない</option>
+            </select>
           </label>
-          <span class="active-badge" id="active-badge" hidden>使用中</span>
         </div>
+      </fieldset>
 
-        <fieldset>
-          <legend>お名前</legend>
-          <div class="grid2">
-            <label><span>姓</span><input type="text" name="last_name" placeholder="山田"></label>
-            <label><span>名</span><input type="text" name="first_name" placeholder="太郎"></label>
-            <label><span>せい（ふりがな）</span><input type="text" name="last_kana" placeholder="やまだ"></label>
-            <label><span>めい（ふりがな）</span><input type="text" name="first_kana" placeholder="たろう"></label>
-          </div>
-          <p class="hint">ふりがなはひらがなで登録してください。カタカナの欄には自動で変換して入力します。</p>
-        </fieldset>
-
-        <fieldset>
-          <legend>生年月日・性別</legend>
-          <div class="grid2">
-            <label><span>生年月日</span><input type="date" name="birth"></label>
-            <label><span>性別</span>
-              <select name="gender">
-                <option value="">登録しない</option>
-                <option value="male">男性</option>
-                <option value="female">女性</option>
-                <option value="other">その他・回答しない</option>
-              </select>
-            </label>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>連絡先</legend>
-          <div class="grid2">
-            <label><span>メールアドレス</span><input type="email" name="email" placeholder="taro@example.com"></label>
-            <label><span>電話番号</span><input type="tel" name="phone" placeholder="090-1234-5678"></label>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>住所</legend>
-          <div class="grid2">
-            <label><span>郵便番号</span><input type="text" name="zip" placeholder="150-0001" inputmode="numeric"></label>
-            <label><span>都道府県</span><select name="pref" id="pref"><option value="">選択してください</option></select></label>
-            <label><span>市区町村</span><input type="text" name="city" placeholder="渋谷区"></label>
-            <label><span>番地</span><input type="text" name="street" placeholder="神宮前1-2-3"></label>
-            <label class="span2"><span>建物名・部屋番号</span><input type="text" name="building" placeholder="〇〇マンション101号室"></label>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>勤務先（任意）</legend>
-          <div class="grid2">
-            <label><span>会社名</span><input type="text" name="company"></label>
-            <label><span>部署</span><input type="text" name="department"></label>
-          </div>
-        </fieldset>
-
-        <div class="actions">
-          <button type="submit" class="primary">保存</button>
-          <button type="button" id="use-profile">このプロフィールを使う</button>
-          <button type="button" id="duplicate">複製</button>
-          <span class="spacer"></span>
-          <button type="button" id="delete" class="danger">削除</button>
+      <fieldset>
+        <legend>連絡先</legend>
+        <div class="grid2">
+          <label><span>メールアドレス</span><input type="email" name="email"></label>
+          <label><span>電話番号</span><input type="tel" name="phone"></label>
         </div>
-        <p class="status" id="status" role="status"></p>
-      </form>
-    </section>
-  </main>
+      </fieldset>
 
-  <section class="data">
-    <h2>データの書き出し・読み込み</h2>
-    <p class="hint">別のパソコンへの移行やバックアップ用です。書き出したファイルには個人情報が含まれるので、取り扱いに注意してください。</p>
+      <fieldset>
+        <legend>住所</legend>
+        <div class="grid2">
+          <label><span>郵便番号</span><input type="text" name="zip" inputmode="numeric"></label>
+          <label><span>都道府県</span><select name="pref" id="pref"><option value="">選択してください</option></select></label>
+          <label><span>市区町村</span><input type="text" name="city"></label>
+          <label><span>番地</span><input type="text" name="street"></label>
+          <label class="span2"><span>建物名・部屋番号</span><input type="text" name="building"></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>その他</legend>
+        <div class="grid2">
+          <label><span>会社名</span><input type="text" name="company"></label>
+          <label><span>部署</span><input type="text" name="department"></label>
+          <label class="span2"><span>メモ（フォームには入力されません）</span><input type="text" name="memo"></label>
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <button type="submit" class="primary">保存</button>
+        <button type="button" id="close-editor">閉じる</button>
+        <span class="spacer"></span>
+        <button type="button" id="delete" class="danger">この人を削除</button>
+      </div>
+      <p class="status" id="status" role="status"></p>
+    </form>
+  </section>
+
+  <section class="panel data">
+    <h2>CSVの作り方</h2>
+    <ul class="hint-list">
+      <li>1行目に見出し、2行目から1人1行。見出しは「姓・名・せい・めい・生年月日・性別・メールアドレス・電話番号・郵便番号・都道府県・市区町村・番地・建物名」など（ひな形CSVを参考に）。</li>
+      <li>「氏名」「ふりがな」が1列でも、間にスペースがあれば姓と名に分けます。「住所」1列でも都道府県・市区町村を自動で分けます（目安なので確認してください）。</li>
+      <li>生年月日は「1990/4/1」「平成2年4月1日」「H2.4.1」などに対応。Excelで消えた電話番号・郵便番号の先頭の0も補います。</li>
+      <li>Numbers は「書き出す → CSV」、Excel は「CSV UTF-8」または「CSV（コンマ区切り）」で保存したものをそのまま取り込めます。</li>
+    </ul>
+
+    <h2>バックアップ</h2>
+    <p class="hint">名簿とサイト別の割り当てをまとめて保存・復元します。拡張機能を削除すると名簿も消えるので、ときどき書き出しておいてください。ファイルには個人情報が含まれます。</p>
     <div class="actions">
-      <button id="export">ファイルに書き出す</button>
-      <button id="import">ファイルから読み込む</button>
+      <button id="export">バックアップを書き出す</button>
+      <button id="import">バックアップから復元</button>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
+      <span class="spacer"></span>
+      <button id="clear-all" class="danger">名簿を全部削除</button>
     </div>
 
     <h2>サイトごとの割り当て</h2>
@@ -112,7 +143,7 @@
     <ul id="rules-list" class="rules-list"></ul>
 
     <h2>キーボードショートカット</h2>
-    <p class="hint">初期設定は <kbd>Option</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>（Windowsは Alt+Shift+F）です。変更するには <code>chrome://extensions/shortcuts</code> を開いてください。</p>
+    <p class="hint">選んでいる人を <kbd>Option</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>（Windowsは Alt+Shift+F）で入力できます。変更は <code>chrome://extensions/shortcuts</code> から。</p>
   </section>
 
   <script type="module" src="options.js"></script>

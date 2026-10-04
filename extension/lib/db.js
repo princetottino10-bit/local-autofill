@@ -32,6 +32,24 @@ export const listProfiles = () => run('profiles', 'readonly', (s) => s.getAll())
 export const getProfile = (id) => run('profiles', 'readonly', (s) => s.get(id));
 export const saveProfile = (p) => run('profiles', 'readwrite', (s) => s.put(p));
 export const deleteProfile = (id) => run('profiles', 'readwrite', (s) => s.delete(id));
+export const clearProfiles = () => run('profiles', 'readwrite', (s) => s.clear());
+export async function addProfiles(records) {
+  const db = await open();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('profiles', 'readwrite');
+    const store = tx.objectStore('profiles');
+    for (const r of records) store.add(r);
+    tx.oncomplete = () => resolve(records.length);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+export async function setDone(id, done) {
+  const p = await getProfile(id);
+  if (!p) return null;
+  p.doneAt = done ? new Date().toLocaleString('ja-JP') : null;
+  await saveProfile(p);
+  return p;
+}
 
 export const getRules = async (host) => (await run('siteRules', 'readonly', (s) => s.get(host)))?.rules || {};
 export const saveRules = (host, rules) =>
