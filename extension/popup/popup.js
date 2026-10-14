@@ -61,7 +61,8 @@ function renderList() {
   for (const p of all.slice(0, MAX_LIST)) {
     const li = document.createElement('li');
     li.setAttribute('role', 'option');
-    li.tabIndex = 0;
+    // 一覧の中でTabで止まるのは選択中の人だけ（矢印キーで移動）
+    li.tabIndex = p.id === current?.id ? 0 : -1;
     li.setAttribute('aria-selected', String(p.id === current?.id));
     li.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(p).then(() => $('fill').focus()); }
@@ -76,6 +77,7 @@ function renderList() {
     li.addEventListener('click', () => select(p));
     list.append(li);
   }
+  if (!list.querySelector('li[tabindex="0"]') && list.firstElementChild) list.firstElementChild.tabIndex = 0;
   if (!all.length) list.innerHTML = '<li class="none">見つかりません</li>';
   else if (all.length > MAX_LIST) {
     const li = document.createElement('li');
@@ -113,7 +115,7 @@ $('search').addEventListener('input', renderList);
 $('search').addEventListener('keydown', (e) => {
   if (e.key === 'ArrowDown') {
     e.preventDefault();
-    $('people').querySelector('li[tabindex]')?.focus();
+    $('people').querySelector('li[role=option]')?.focus();
   }
   if (e.key === 'Enter') {
     const first = visible()[0];
@@ -207,7 +209,10 @@ $('undo').addEventListener('click', async () => {
 $('review').addEventListener('click', async () => {
   const panel = $('review-panel');
   panel.hidden = !panel.hidden;
-  if (!panel.hidden) renderReview(await run(() => scanTab(tab.id)));
+  if (!panel.hidden) {
+    renderReview(await run(() => scanTab(tab.id)));
+    panel.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
 });
 
 function renderReview(res) {

@@ -223,8 +223,11 @@ await options.screenshot({ path: path.join(shots, 'options.png') });
 
 // 1人を開いて編集できる
 await options.click('#rows tr:nth-child(2)');
-await options.waitForSelector('#editor:not([hidden])');
+await options.waitForSelector('#editor[open]');
 check('編集画面に読み込まれる', await options.inputValue('[name=city]'), '札幌市中央区');
+await options.keyboard.press('Escape');
+const backToRow = await options.waitForFunction(() => document.activeElement?.tagName === 'TR', null, { timeout: 2000 }).then(() => 'TR', () => 'その他');
+check('Escで編集画面を閉じると一覧の行に戻る', backToRow, 'TR');
 
 const form = await ctx.newPage();
 await form.goto(base + 'furusato.html');

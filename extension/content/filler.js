@@ -232,6 +232,11 @@
     return el.name ? [...document.querySelectorAll(`input[type=radio][name="${CSS.escape(el.name)}"]`)] : [el];
   }
 
+  function radioHeading(el) {
+    const box = commonAncestor(radioGroup(el));
+    return box ? (siblingText(box, 'prev') || headerText(el)).slice(0, 30) : '';
+  }
+
   function commonAncestor(els) {
     let node = els[0]?.parentElement;
     while (node && !els.every((e) => node.contains(e))) node = node.parentElement;
@@ -336,7 +341,9 @@
         if (seenRadio.has(sig)) return;
         seenRadio.add(sig);
       }
-      fields.push({ el, sig, c, cat: categorize(el, c), part: null, key: null, label: el.__laLabel });
+      const cat = categorize(el, c);
+      const label = el.type === 'radio' ? (cat === 'gender' ? '性別' : radioHeading(el) || el.__laLabel) : el.__laLabel;
+      fields.push({ el, sig, c, cat, part: null, key: null, label });
     });
 
     // 部分（姓／名、年／月／日など）を判定

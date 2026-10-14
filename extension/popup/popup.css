@@ -29,7 +29,9 @@ footer { margin-top: 12px; color: var(--muted); font-size: 11px; text-align: cen
 .people li:last-child { border-bottom: 0; }
 .people li:hover { background: var(--bg); }
 .people li[aria-selected=true] { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
-.people li small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.people li span { flex: 0 1 auto; min-width: 0; max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.people li small { flex: 1 1 0; min-width: 0; text-align: right; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.people li:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .people li.none { color: var(--muted); cursor: default; }
 .current { margin-bottom: 10px; }
 .current-head { display: flex; justify-content: space-between; align-items: start; gap: 8px; }

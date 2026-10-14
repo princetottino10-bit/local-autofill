@@ -19,7 +19,12 @@ function status(el, text, error = false) {
   el.textContent = text;
   el.classList.toggle('error', error);
   el.classList.remove('warn');
+  if (el.id === 'import-status') {
+    $('import-notice').hidden = !text;
+    $('import-notice').classList.remove('warn');
+  }
 }
+$('import-close').addEventListener('click', () => { $('import-notice').hidden = true; });
 
 function download(name, text, type) {
   const a = document.createElement('a');
@@ -52,6 +57,10 @@ function render() {
   const done = people.filter((p) => p.doneAt).length;
   $('count').textContent = people.length ? `${people.length}人（入力済み ${done}・未入力 ${people.length - done}）` : '';
   $('empty').hidden = people.length > 0;
+  $('table-wrap').hidden = people.length === 0;
+  $('export-csv').disabled = people.length === 0;
+  $('clear-all').disabled = people.length === 0;
+  $('search').disabled = $('filter').disabled = people.length === 0;
   const tbody = $('rows');
   tbody.replaceChildren();
   for (const p of list.slice(0, shown)) {
@@ -69,7 +78,9 @@ function render() {
       if (i === 0) td.innerHTML = c; else td.textContent = c || '';
       tr.append(td);
     });
+    tr.tabIndex = 0;
     tr.addEventListener('click', () => openEditor(p.id));
+    tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEditor(p.id); } });
     tbody.append(tr);
   }
   $('more').hidden = list.length <= shown;
@@ -98,13 +109,25 @@ function openEditor(id) {
   $('editor-title').textContent = p ? displayName(p.data) : '新しい人を追加';
   $('delete').hidden = !p;
   status($('status'), '');
-  $('editor').hidden = false;
+  if (!$('editor').open) $('editor').showModal();
   render();
-  $('editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+function closeEditor() {
+  if ($('editor').open) $('editor').close();
+}
+
+$('editor').addEventListener('close', () => {
+  const id = currentId;
+  currentId = null;
+  render();
+  // ブラウザがダイアログを開く前の場所へフォーカスを戻した後で、編集していた行に移す
+  if (id != null) setTimeout(() => document.querySelector(`#rows tr[data-id="${id}"]`)?.focus(), 0);
+});
+
 $('new-person').addEventListener('click', () => openEditor(null));
-$('close-editor').addEventListener('click', () => { $('editor').hidden = true; currentId = null; render(); });
+$('close-editor').addEventListener('click', closeEditor);
+$('editor-x').addEventListener('click', closeEditor);
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -130,7 +153,7 @@ $('delete').addEventListener('click', async () => {
   if (!p || !confirm(`「${displayName(p.data)}」を削除しますか？元に戻せません。`)) return;
   await deleteProfile(currentId);
   currentId = null;
-  $('editor').hidden = true;
+  closeEditor();
   await refresh();
 });
 
@@ -167,7 +190,7 @@ $('csv-file').addEventListener('change', async (e) => {
     if (warnings.badAddress.length) warn.push(`住所を都道府県・市区町村に分けられませんでした: ${list(warnings.badAddress)}`);
     if (warn.length) lines.push('', '要確認：', ...warn.map((w) => `・${w}`), '一覧の行を押すと直せます。');
     status($('import-status'), lines.join('\n'), false);
-    $('import-status').classList.toggle('warn', warn.length > 0);
+    $('import-notice').classList.toggle('warn', warn.length > 0);
     await refresh();
   } catch (err) {
     status($('import-status'), `取り込めませんでした: ${err.message}`, true);
@@ -194,7 +217,7 @@ $('import-file').addEventListener('change', async (e) => {
 $('clear-all').addEventListener('click', async () => {
   if (!people.length || !confirm(`名簿の${people.length}人を全部削除します。元に戻せません。よろしいですか？`)) return;
   await clearProfiles();
-  $('editor').hidden = true;
+  closeEditor();
   currentId = null;
   await refresh();
 });

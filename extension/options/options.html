@@ -27,7 +27,10 @@
       </div>
     </div>
     <label class="check"><input type="checkbox" id="replace-on-import"> 取り込む前に今の名簿を全部消す（上書き）</label>
-    <p class="status" id="import-status" role="status"></p>
+    <div class="notice" id="import-notice" hidden>
+      <p class="status" id="import-status" role="status"></p>
+      <button type="button" class="notice-close" id="import-close" aria-label="お知らせを閉じる">×</button>
+    </div>
 
     <div class="toolbar">
       <input type="search" id="search" placeholder="名前・ふりがな・電話・メールで検索">
@@ -39,7 +42,7 @@
       <button id="new-person">＋ 1人追加</button>
     </div>
 
-    <div class="table-wrap">
+    <div class="table-wrap" id="table-wrap">
       <table class="roster-table">
         <thead><tr><th>状態</th><th>氏名</th><th>ふりがな</th><th>電話番号</th><th>住所</th></tr></thead>
         <tbody id="rows"></tbody>
@@ -49,11 +52,14 @@
     <p class="empty" id="empty" hidden>まだ誰も登録されていません。「CSVを取り込む」か「＋ 1人追加」から登録してください。</p>
   </section>
 
-  <section class="panel editor" id="editor" hidden>
+  <dialog class="editor" id="editor" aria-labelledby="editor-title">
     <form id="form" autocomplete="off">
       <div class="editor-head">
         <h2 id="editor-title">編集</h2>
-        <label class="check"><input type="checkbox" name="done"> 入力済み <span class="done-at" id="done-at"></span></label>
+        <div class="editor-tools">
+          <label class="check"><input type="checkbox" name="done"> 入力済み <span class="done-at" id="done-at"></span></label>
+          <button type="button" class="editor-close" id="editor-x" aria-label="閉じる">×</button>
+        </div>
       </div>
 
       <fieldset>
@@ -117,7 +123,7 @@
       </div>
       <p class="status" id="status" role="status"></p>
     </form>
-  </section>
+  </dialog>
 
   <section class="panel data">
     <h2>CSVの作り方</h2>
