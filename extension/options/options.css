@@ -48,3 +48,4 @@ code { font-size: 12px; background: var(--bg); padding: 1px 5px; border-radius: 
   .grid2 { grid-template-columns: 1fr; }
   .toolbar { flex-wrap: wrap; }
 }
+.status.warn { color: var(--warn); }

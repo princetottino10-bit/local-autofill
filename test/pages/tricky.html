@@ -1,0 +1,19 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>問題が起きやすいフォーム</title>
+<style>.r{opacity:0;position:absolute}.r+span{display:inline-block;padding:4px 10px;border:1px solid #999}</style></head>
+<body>
+<header><form id="login">メールアドレス <input name="login_mail"> <button>ログイン</button></form></header>
+<form id="main">
+<p>お名前 <input name="nm"></p>
+<p>都道府県 <select name="pref"><option>北海道</option><option selected>東京都</option><option>大阪府</option></select></p>
+<p>性別 <label><input type="radio" name="g" value="m" checked>男性</label><label><input type="radio" name="g" value="f">女性</label></p>
+<p>ご職業の性別欄 <label><input class="r" type="radio" name="sx" value="1"><span>男</span></label><label><input class="r" type="radio" name="sx" value="2"><span>女</span></label></p>
+<p>生まれた年 <select name="by"><option value="">選択</option><option>昭和64年</option><option>平成元年</option></select></p>
+<p>郵便番号 <input name="z"></p>
+<p>お名前（姓） <input id=":r1:"></p>
+<p>メールアドレス <input id="mail"></p>
+<input name="trap_tel" style="opacity:0;position:absolute;left:0;top:0;width:200px;height:20px" aria-label="電話番号">
+<input name="trap_addr" style="position:absolute;left:-5000px" aria-label="住所">
+<input name="trap_tiny" style="width:1px;height:1px" aria-label="生年月日">
+</form>
+<footer><form id="news">メールマガジン登録 <input name="news_mail" placeholder="メールアドレス"></form></footer>
+</body></html>

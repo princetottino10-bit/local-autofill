@@ -83,13 +83,55 @@ for (const [file, expected] of Object.entries(EXPECT)) {
     check('Reactの状態に反映（都道府県）', state.pref, '13');
     check('Reactの状態に反映（生年月日）', state.birthday, '1989-01-07');
   }
-  // 2回目は入力済みなので何も変えない／元に戻すで空に戻る
+  // 2回目は同じ値なので何も書き換えない／元に戻すで空に戻る
   const second = await page.evaluate((d) => window.__localAutofill.fill(d, {}, {}), PROFILE);
-  check('2回目は入力済みの欄を上書きしない', second.fields.filter((f) => f.status === 'filled').length, 0);
+  check('同じ人を2回入力しても書き換えない', second.fields.filter((f) => f.status === 'filled' && !f.same).length, 0);
+  check('同じ人を2回入力しても値は同じ', JSON.stringify(await values(page)), JSON.stringify(got));
   await page.evaluate(() => window.__localAutofill.undo());
   const afterUndo = await values(page);
   const firstKey = Object.keys(expected)[0];
   check('元に戻すで空欄に戻る', afterUndo[firstKey], '');
+  await page.close();
+}
+// ---------- 問題が起きやすいフォーム ----------
+console.log('\n[単体] tricky.html（関係ないフォーム・見えない欄・初期値・性別・前の人の残り）');
+{
+  const SUZUKI = { ...PROFILE, last_name: '鈴木', first_name: '花子', gender: 'female', zip: '060-0001', pref: '北海道', email: 'hanako@example.com' };
+  const page = await browser.newPage();
+  await page.goto(base + 'tricky.html');
+  await page.addScriptTag({ path: path.join(root, 'extension/content/filler.js') });
+  const r = await page.evaluate((d) => window.__localAutofill.fill(d, {}, {}), SUZUKI);
+  const v = await values(page);
+  check('ヘッダーのログイン欄には入れない', v.login_mail, '');
+  check('フッターのメルマガ欄には入れない', v.news_mail, '');
+  check('透明な欄には入れない', v.trap_tel, '');
+  check('画面外の欄には入れない', v.trap_addr, '');
+  check('1pxの欄には入れない', v.trap_tiny, '');
+  check('初期値「東京都」の選択欄を北海道に直す', v.pref, '北海道');
+  check('初期値「男性」のラジオを女性に直す', v.g, 'f');
+  check('見出しなし・本体が透明な性別ラジオも選ぶ', v.sx, '2');
+  check('選択肢が合わない欄を報告する', r.fields.find((f) => f.sig === 'n:by@0')?.status, 'no-match');
+  check('自動生成のidを目印に使わない', r.fields.some((f) => f.sig.includes(':r1:')), false);
+  check('自動生成idの欄も入力はする', v[':r1:'], '鈴木');
+  // 前の人（鈴木）の値が残ったまま次の人（高橋）を入力する
+  await page.reload();
+  await page.addScriptTag({ path: path.join(root, 'extension/content/filler.js') });
+  await page.evaluate((d) => window.__localAutofill.fill(d, {}, {}), SUZUKI);
+  await page.reload(); // フォームの値はブラウザが復元しないので、残った状態を手で再現
+  await page.addScriptTag({ path: path.join(root, 'extension/content/filler.js') });
+  await page.evaluate(() => { document.querySelector('[name=nm]').value = '鈴木 花子'; document.querySelector('[name=z]').value = '0600001'; document.querySelector('[name=pref]').value = '北海道'; });
+  const TAKAHASHI = { ...PROFILE, last_name: '高橋', first_name: '一郎', zip: '100-0001', pref: '東京都', gender: 'male' };
+  const r2 = await page.evaluate(([d, prev]) => window.__localAutofill.fill(d, {}, { prevData: prev }), [TAKAHASHI, SUZUKI]);
+  const v2 = await values(page);
+  check('前の人の名前を書き換える', v2.nm, '高橋 一郎');
+  check('前の人の郵便番号を書き換える', v2.z, '1000001');
+  check('前の人の都道府県を書き換える', v2.pref, '東京都');
+  check('書き換えた欄を報告する', r2.fields.filter((f) => f.replaced).length, 3);
+  // 本人が手で入れた別の値は残す
+  await page.evaluate(() => { document.querySelector('[name=nm]').value = '手入力 さん'; });
+  const r3 = await page.evaluate(([d, prev]) => window.__localAutofill.fill(d, {}, { prevData: prev }), [TAKAHASHI, SUZUKI]);
+  check('手で入れた値は上書きしない', (await values(page)).nm, '手入力 さん');
+  check('上書きしなかった欄を報告する', r3.fields.find((f) => f.sig === 'n:nm@0')?.status, 'kept');
   await page.close();
 }
 await browser.close();
@@ -120,6 +162,21 @@ const csv = await import('../extension/lib/csv.js');
   check('Shift_JIS の CSV', sj.records[0].data.last_name, '高橋');
   check('Shift_JIS: 姓（フリガナ）列', sj.records[0].data.last_kana, 'たかはし');
   check('使わない列を報告', sj.unknown.join(), '社員番号');
+  const w = csv.recordsFromCSV('氏名,電話番号,携帯電話,生年月日,住所\n山田太郎,,09012345678,1/7/1989,どこか1-1\n鈴木 花子,0311112222,09000000000,1990/4/1,東京都渋谷区1\n');
+  check('スペースなしの氏名を警告', w.warnings.noSpaceName.join(), '山田太郎');
+  check('読めない生年月日を警告', w.warnings.badBirth.length, 1);
+  check('分けられない住所を警告', w.warnings.badAddress.join(), 'どこか1-1');
+  check('電話番号の列が2つ: 左が空なら右を使う', w.records[0].data.phone, '090-1234-5678');
+  check('電話番号の列が2つ: 左を優先', w.records[1].data.phone, '03-1111-2222');
+  check('列の重複を説明', w.duplicated.length, 1);
+  const u16 = csv.decode(Buffer.from('\ufeff氏名\n山田 太郎\n', 'utf16le'));
+  check('UTF-16 の CSV', csv.recordsFromCSV(u16 + '\n').records[0]?.data.last_name, '山田');
+  const cities = { '三重県四日市市安島1-1': '四日市市', '新潟県十日町市本町1': '十日町市', '東京都東村山市本町1-2': '東村山市',
+    '奈良県大和郡山市北郡山町248': '大和郡山市', '東京都千代田区市ケ谷1': '千代田区', '東京都西多摩郡瑞穂町箱根ケ崎2335': '西多摩郡瑞穂町',
+    '千葉県市川市八幡1-1': '市川市', '茨城県かすみがうら市上土田461': 'かすみがうら市' };
+  for (const [addr, city] of Object.entries(cities)) check(`住所の分割: ${city}`, csv.splitAddress(addr).city, city);
+  check('同じ人の目印は同じ人で一致', csv.personKey(utf.records[0]), csv.personKey(JSON.parse(JSON.stringify(utf.records[0]))));
+  check('同じ人の目印は別の人で異なる', csv.personKey(utf.records[0]) === csv.personKey(utf.records[1]), false);
   const round = csv.recordsFromCSV(csv.decode(new TextEncoder().encode(csv.toCSV(utf.records))));
   check('書き出し → 読み込みで元に戻る', JSON.stringify(round.records.map((r) => r.data)), JSON.stringify(utf.records.map((r) => r.data)));
 }
@@ -159,6 +216,9 @@ await options.waitForSelector('#import-status:has-text("取り込みました")'
 await options.setInputFiles('#csv-file', path.join(root, 'test/fixtures/roster-sjis.csv'));
 await options.waitForFunction(() => document.querySelector('#count').textContent.startsWith('4人'));
 check('CSVを2つ取り込んで4人', await options.textContent('#count'), '4人（入力済み 0・未入力 4）');
+await options.setInputFiles('#csv-file', path.join(root, 'test/fixtures/roster-utf8.csv'));
+await options.waitForSelector('#import-status:has-text("すでに名簿にいる3人")');
+check('同じCSVをもう一度取り込んでも増えない', await options.textContent('#count'), '4人（入力済み 0・未入力 4）');
 await options.screenshot({ path: path.join(shots, 'options.png') });
 
 // 1人を開いて編集できる
@@ -196,6 +256,11 @@ await popup.click('#done-next');
 await popup.waitForFunction(() => document.querySelector('#current-name').textContent === '鈴木 花子');
 check('次の人に進む', await popup.textContent('#current-name'), '鈴木 花子');
 check('進捗表示', await popup.textContent('#progress'), '4人中 1人入力済み・残り3人');
+// まだ入力していない人で「入力済みにして次へ」を押すと、まず確認が出る
+await popup.click('#done-next');
+const confirmShown = await popup.waitForFunction(() => document.querySelector('#result').textContent.includes('もう一度押してください'), null, { timeout: 3000 }).then(() => true, () => false);
+check('未入力の人は確認が出る', confirmShown, true);
+check('確認の時点では進まない', await popup.textContent('#current-name'), '鈴木 花子');
 await popup.screenshot({ path: path.join(shots, 'popup.png'), fullPage: true });
 
 // 検索して選ぶ → 表形式のフォームに入力

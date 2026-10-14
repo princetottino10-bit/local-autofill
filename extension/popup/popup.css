@@ -39,3 +39,4 @@ footer { margin-top: 12px; color: var(--muted); font-size: 11px; text-align: cen
 .badge.done { background: var(--accent-soft); color: var(--accent); }
 .badge.todo { background: var(--warn-soft); color: var(--warn); }
 .accent-outline { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.result { white-space: pre-line; }

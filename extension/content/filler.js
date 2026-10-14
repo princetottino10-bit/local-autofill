@@ -18,10 +18,36 @@
   const TEXT_TYPES = new Set(['', 'text', 'email', 'tel', 'number', 'date', 'search', 'url']);
   const CONTROL_SEL = 'input, select, textarea';
 
-  function isVisible(el) {
+  function effectiveOpacity(el) {
+    let o = 1;
+    for (let n = el; n && n.nodeType === 1 && o > 0.1; n = n.parentElement) o *= Number(getComputedStyle(n).opacity);
+    return o;
+  }
+
+  // 人の目に見える大きさと場所にあるか（画面外・極小・透明の欄を除外する）
+  function isShown(el) {
     if (el.getClientRects().length === 0) return false;
     const st = getComputedStyle(el);
-    return st.visibility !== 'hidden' && st.display !== 'none';
+    if (st.visibility === 'hidden' || st.display === 'none') return false;
+    const r = el.getBoundingClientRect();
+    const px = (k) => parseFloat(st[k]) || 0;
+    const innerW = r.width - px('paddingLeft') - px('paddingRight') - px('borderLeftWidth') - px('borderRightWidth');
+    const innerH = r.height - px('paddingTop') - px('paddingBottom') - px('borderTopWidth') - px('borderBottomWidth');
+    if (r.width < 4 || r.height < 4 || innerW < 3 || innerH < 3) return false;
+    const docW = Math.max(document.documentElement.scrollWidth, innerWidth);
+    if (r.right + scrollX <= 0 || r.bottom + scrollY <= 0 || r.left + scrollX >= docW) return false;
+    if (/rect\(0(px)?,? 0(px)?,? 0(px)?,? 0(px)?\)/.test(st.clip)) return false;
+    return true;
+  }
+
+  function isVisible(el) {
+    if (isShown(el) && effectiveOpacity(el) > 0.1) return true;
+    // デザイン用に本体を透明にしたラジオボタン・選択欄は、見えているラベルや外枠があれば対象にする
+    if (el.type === 'radio' || el.tagName === 'SELECT') {
+      const visual = [...(el.labels || []), el.parentElement].filter(Boolean);
+      return visual.some((v) => isShown(v) && effectiveOpacity(v) > 0.1 && v.getBoundingClientRect().width >= 8);
+    }
+    return false;
   }
 
   function isCandidate(el) {
@@ -183,8 +209,13 @@
 
   function categorize(el, c) {
     if (el.type === 'radio') {
-      // ラジオボタンは性別のみ対象
-      return [c.header, c.row, c.attr].some((s) => /gender|性別|sex/i.test(s)) ? 'gender' : 'skip';
+      // ラジオボタンは性別のみ対象。選択肢が「男性／女性」なら見出しがなくても性別とみなす
+      const radios = radioGroup(el);
+      const box = commonAncestor(radios);
+      const around = [c.header, c.attr, box && textOf(box, 120), box && siblingText(box, 'prev'), box && rowText(box)];
+      const options = radios.map((r) => `${labelText(r)} ${siblingText(r, 'next')}`).join(' ');
+      if (around.some((s) => /gender|性別|sex/i.test(s || ''))) return 'gender';
+      return /男/.test(options) && /女/.test(options) ? 'gender' : 'skip';
     }
     let cat = AUTOCOMPLETE_MAP[c.ac] || null;
     if (!cat) {
@@ -195,6 +226,16 @@
     }
     if (cat === 'name' && isKana(c)) cat = 'kana';
     return cat || null;
+  }
+
+  function radioGroup(el) {
+    return el.name ? [...document.querySelectorAll(`input[type=radio][name="${CSS.escape(el.name)}"]`)] : [el];
+  }
+
+  function commonAncestor(els) {
+    let node = els[0]?.parentElement;
+    while (node && !els.every((e) => node.contains(e))) node = node.parentElement;
+    return node && node !== document.body ? node : null;
   }
 
   function isKana(c) {
@@ -257,14 +298,20 @@
   }
 
   // ---------- 欄の一覧を作る ----------
-  function signature(el, index, all) {
-    if (el.id && document.querySelectorAll(`#${CSS.escape(el.id)}`).length === 1) return `#${el.id}`;
-    if (el.name) {
+  // React などが毎回作り直す id（:r1:、mui-123、input-v-4 など）
+  const GENERATED_ID = /[:]|\d{3,}|^(mui|react|radix|headlessui|chakra|mantine|v-|el-|input-|field-|ember|ext-gen)/i;
+
+  function signature(el, c, all) {
+    if (el.name && !GENERATED_ID.test(el.name)) {
       if (el.type === 'radio') return `r:${el.name}`;
       const same = all.filter((e) => e.name === el.name);
       return `n:${el.name}@${same.indexOf(el)}`;
     }
-    return `i:${el.tagName.toLowerCase()}@${index}`;
+    if (el.id && !GENERATED_ID.test(el.id) && document.querySelectorAll(`#${CSS.escape(el.id)}`).length === 1) return `#${el.id}`;
+    // 名前で特定できない欄は「ラベル＋同じラベル内の順番」で覚える
+    const label = shortLabel(c);
+    const same = all.filter((e) => e.__laLabel === label);
+    return `t:${label}@${same.indexOf(el)}`;
   }
 
   function shortLabel(c) {
@@ -277,14 +324,19 @@
     const els = [...document.querySelectorAll(CONTROL_SEL)].filter(isCandidate);
     const seenRadio = new Set();
     const fields = [];
+    const descs = els.map((el) => {
+      const c = describe(el);
+      el.__laLabel = shortLabel(c);
+      return c;
+    });
     els.forEach((el, i) => {
-      const sig = signature(el, i, els);
+      const c = descs[i];
+      const sig = signature(el, c, els);
       if (el.type === 'radio') {
         if (seenRadio.has(sig)) return;
         seenRadio.add(sig);
       }
-      const c = describe(el);
-      fields.push({ el, sig, c, cat: categorize(el, c), part: null, key: null, label: shortLabel(c) });
+      fields.push({ el, sig, c, cat: categorize(el, c), part: null, key: null, label: el.__laLabel });
     });
 
     // 部分（姓／名、年／月／日など）を判定
@@ -360,16 +412,18 @@
   }
 
   // 住所の各部分を、ページ上に存在する欄へ割り振る
-  function addressPlan(present) {
+  // selectKeys: 選択欄の項目（都道府県の選択欄などには、ほかの部分をつなげて入れられない）
+  function addressPlan(present, selectKeys = new Set()) {
     const parts = ['pref', 'city', 'street', 'building'];
+    const canTake = (o) => o && !selectKeys.has(o);
     const owner = {};
     parts.forEach((p, i) => {
       if (present.has(p)) owner[p] = p;
-      else if (present.has('address')) owner[p] = 'address';
+      else if (canTake('address') && present.has('address')) owner[p] = 'address';
       else {
         let o = null;
-        for (let k = i - 1; k >= 0 && !o; k--) o = owner[parts[k]];
-        for (let k = i + 1; k < parts.length && !o; k++) if (present.has(parts[k])) o = parts[k];
+        for (let k = i - 1; k >= 0 && !o; k--) if (canTake(owner[parts[k]])) o = owner[parts[k]];
+        for (let k = i + 1; k < parts.length && !o; k++) if (present.has(parts[k]) && canTake(parts[k])) o = parts[k];
         owner[p] = o;
       }
     });
@@ -461,12 +515,46 @@
     if (el.tagName === 'SELECT') {
       if (!el.value) return true;
       const opt = el.options[el.selectedIndex];
-      return el.selectedIndex <= 0 && !!opt && /選択|選んで|^-+$|^ *$|please|select/i.test(opt.text);
+      if (el.selectedIndex <= 0 && !!opt && /選択|選んで|^-+$|^ *$|please|select/i.test(opt.text)) return true;
+      // ページが最初から選んでいた選択肢（例：都道府県の初期値「東京都」）のままなら空とみなす
+      return !!opt && opt.defaultSelected && !wasSetByUs(el, opt.value);
     }
     if (el.type === 'radio') {
-      return !document.querySelector(`input[type=radio][name="${CSS.escape(el.name)}"]:checked`);
+      const checked = radioGroup(el).find((r) => r.checked);
+      return !checked || checked.defaultChecked;
     }
     return el.value === '';
+  }
+
+  // この拡張が前に入れた値（同じページ内）
+  const lastSet = new WeakMap();
+  const wasSetByUs = (el, value) => lastSet.has(el) && lastSet.get(el) === value;
+
+  function currentValue(el) {
+    if (el.type === 'radio') return radioGroup(el).find((r) => r.checked)?.value ?? '';
+    return el.value;
+  }
+
+  // すでに同じ値が入っているか（同じ人を2回入力したときなど）
+  function alreadyHas(f, v) {
+    const cur = currentValue(f.el);
+    if (!cur) return false;
+    if (f.el.tagName === 'SELECT') return findOption(f.el, f.key, v)?.value === cur && !isEmpty(f.el);
+    if (f.el.type === 'radio') return radioFor(f.el, v)?.value === cur && !isEmpty(f.el);
+    return cur === v;
+  }
+
+  // 前の人の値が残っている欄か（この拡張が入れた値、または前に入力した人のデータと一致）
+  function isLeftover(f, prevData, plan) {
+    const cur = currentValue(f.el);
+    if (!cur) return false;
+    if (wasSetByUs(f.el, cur)) return true;
+    if (!prevData) return false;
+    const pv = valueFor(f, prevData, plan);
+    if (!pv) return false;
+    if (f.el.tagName === 'SELECT') return findOption(f.el, f.key, pv)?.value === cur;
+    if (f.el.type === 'radio') return radioFor(f.el, pv)?.value === cur;
+    return pv === cur;
   }
 
   function setValue(el, v) {
@@ -497,21 +585,40 @@
 
   let undoStack = [];
 
+  // 判定できた欄がいちばん多いフォームだけを対象にする（ヘッダーのログイン欄やメルマガ欄を避ける）
+  function mainGroup(fields) {
+    const score = new Map();
+    for (const f of fields) {
+      f.group = f.el.form || f.el.closest('form') || null;
+      if (f.key && f.key !== 'skip') score.set(f.group, (score.get(f.group) || 0) + 1);
+    }
+    let best = null, bestScore = -1;
+    for (const [g, n] of score) if (n > bestScore) { best = g; bestScore = n; }
+    return best;
+  }
+
   function fill(data, rules, opts = {}) {
     const fields = collect(rules);
-    const present = new Set(fields.map((f) => f.key).filter(Boolean));
-    const plan = addressPlan(present);
+    const main = mainGroup(fields);
+    const inMain = fields.filter((f) => f.group === main);
+    const present = new Set(inMain.map((f) => f.key).filter(Boolean));
+    const plan = addressPlan(present, new Set(inMain.filter((f) => f.el.tagName === 'SELECT').map((f) => f.key)));
     const changes = [];
     const report = [];
     for (const f of fields) {
       const entry = { sig: f.sig, label: f.label, key: f.key, status: 'unknown' };
       report.push(entry);
+      if (f.group !== main) { entry.status = 'other-form'; continue; }
       // 判定できない自由記述欄（お問い合わせ内容など）は「未判定」に数えない
       if (f.key === 'skip' || (!f.key && f.el.tagName === 'TEXTAREA')) { entry.status = 'skip'; continue; }
       if (!f.key) continue;
       const v = valueFor(f, data || {}, plan);
       if (!v) { entry.status = 'no-value'; continue; }
-      if (!opts.overwrite && !isEmpty(f.el)) { entry.status = 'kept'; continue; }
+      if (alreadyHas(f, v)) { entry.status = 'filled'; entry.same = true; continue; }
+      if (!opts.overwrite && !isEmpty(f.el)) {
+        if (isLeftover(f, opts.prevData, plan)) entry.replaced = true;
+        else { entry.status = 'kept'; continue; }
+      }
       const el = f.el;
       if (el.type === 'radio') {
         const r = radioFor(el, v);
@@ -519,16 +626,19 @@
         const checked = document.querySelector(`input[type=radio][name="${CSS.escape(el.name)}"]:checked`);
         changes.push({ el: r, radio: true, prevChecked: checked });
         r.click();
-        flash(r);
+        lastSet.set(el, r.value);
+        flash(r.labels?.[0] || r);
       } else if (el.tagName === 'SELECT') {
         const o = findOption(el, f.key, v);
         if (!o) { entry.status = 'no-match'; continue; }
         changes.push({ el, prev: el.value });
         setValue(el, o.value);
+        lastSet.set(el, o.value);
         flash(el);
       } else {
         changes.push({ el, prev: el.value });
         setValue(el, v);
+        lastSet.set(el, el.value);
         flash(el);
       }
       entry.status = 'filled';
@@ -538,7 +648,9 @@
   }
 
   function scan(rules) {
-    return { host: location.hostname, fields: collect(rules).map((f) => ({ sig: f.sig, label: f.label, key: f.key, status: 'scan' })) };
+    const fields = collect(rules);
+    const main = mainGroup(fields);
+    return { host: location.hostname, fields: fields.filter((f) => f.group === main).map((f) => ({ sig: f.sig, label: f.label, key: f.key, status: 'scan' })) };
   }
 
   function undo() {

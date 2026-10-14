@@ -4,6 +4,9 @@
 // Mac の Numbers / Excel の「CSV UTF-8」は UTF-8、Excel の「CSV（コンマ区切り）」は Shift_JIS
 export function decode(buffer) {
   const bytes = new Uint8Array(buffer);
+  // Excel の「UTF-16 Unicode テキスト」
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder('utf-16le').decode(bytes.subarray(2));
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder('utf-16be').decode(bytes.subarray(2));
   try {
     return new TextDecoder('utf-8', { fatal: true }).decode(bytes).replace(/^﻿/, '');
   } catch {
@@ -60,6 +63,7 @@ export function mapHeader(raw) {
     return 'kana';
   }
   if (/氏名|名前|fullname|^name$/.test(h)) return 'name';
+  if (/^姓名$/.test(h)) return 'name';
   if (/^(姓|氏|苗字|lastname|familyname|sei)/.test(h)) return 'last_name';
   if (/^(名|firstname|givenname|mei)$|^名漢字$/.test(h)) return 'first_name';
   return null;
@@ -114,14 +118,32 @@ export function normalizeZip(raw) {
   return `${z.slice(0, 3)}-${z.slice(3)}`;
 }
 
+const TOKYO_WARDS = /^(千代田区|中央区|港区|新宿区|文京区|台東区|墨田区|江東区|品川区|目黒区|大田区|世田谷区|渋谷区|中野区|杉並区|豊島区|北区|荒川区|板橋区|練馬区|足立区|葛飾区|江戸川区)/;
+
+// 市区町村を切り出す。四日市市・十日町市・東村山市・大和郡山市のように名前に「市町村郡」を含む市にも対応
+export function splitCity(s) {
+  const ward = s.match(TOKYO_WARDS);
+  if (ward) return ward[1];
+  const town = s.match(/^(.{1,5}?郡.{1,5}?[町村])/);
+  if (town && !town[1].includes('市')) return town[1];
+  const shi = s.match(/^(.{1,7}?市)(市)?/);
+  if (shi) {
+    const city = shi[1] + (shi[2] || '');
+    const seirei = s.slice(city.length).match(/^(.{1,4}?区)/); // 政令指定都市の区
+    return city + (seirei ? seirei[1] : '');
+  }
+  const other = s.match(/^(.+?[区町村])/);
+  return other ? other[1] : '';
+}
+
 // 「東京都渋谷区神宮前1-2-3 ○○マンション101」を各部分に分ける（目安）
 export function splitAddress(raw) {
   let s = (raw || '').trim();
   const out = { pref: '', city: '', street: '', building: '' };
   const pref = s.match(/^(東京都|北海道|(?:京都|大阪)府|.{2,3}県)/);
   if (pref) { out.pref = pref[1]; s = s.slice(pref[1].length); }
-  const city = s.match(/^(.+?市.+?区|.+?郡.+?[町村]|.+?[市区町村])/);
-  if (city) { out.city = city[1]; s = s.slice(city[1].length); }
+  const city = splitCity(s);
+  if (city) { out.city = city; s = s.slice(city.length); }
   const sp = s.search(/[\s　]/);
   if (sp > 0) { out.street = s.slice(0, sp); out.building = s.slice(sp).trim(); } else out.street = s;
   return out;
@@ -139,26 +161,47 @@ export function recordsFromCSV(text) {
     throw new Error('「氏名」または「姓」の列が見つかりません。1行目に見出しを入れてください');
   }
   const unknown = rows[0].filter((h, i) => h.trim() && !keys[i]);
+  // 同じ項目に当たる列が複数あるとき（電話番号と携帯電話など）は左の列を優先し、空なら次の列を使う
+  const duplicated = [];
+  keys.forEach((k, i) => {
+    const first = keys.indexOf(k);
+    if (k && first !== i) duplicated.push(`「${rows[0][i].trim()}」は「${rows[0][first].trim()}」が空のときだけ使います`);
+  });
+  const warnings = { noSpaceName: [], badBirth: [], badAddress: [] };
   const records = rows.slice(1).map((row) => {
     const raw = {};
-    keys.forEach((k, i) => { if (k && row[i] != null && row[i].trim() !== '') raw[k] = row[i].trim(); });
+    keys.forEach((k, i) => { if (k && !raw[k] && row[i] != null && row[i].trim() !== '') raw[k] = row[i].trim(); });
     const d = Object.fromEntries(DATA_KEYS.map((k) => [k, raw[k] || '']));
-    if (raw.name && !d.last_name) [d.last_name, d.first_name] = splitName(raw.name);
+    if (raw.name && !d.last_name) {
+      [d.last_name, d.first_name] = splitName(raw.name);
+      if (!d.first_name) warnings.noSpaceName.push(raw.name);
+    }
     if (raw.kana && !d.last_kana) [d.last_kana, d.first_kana] = splitName(raw.kana);
     d.last_kana = toHiragana(d.last_kana);
     d.first_kana = toHiragana(d.first_kana);
     if (raw.address) {
       const a = splitAddress(raw.address);
       for (const k of ['pref', 'city', 'street', 'building']) d[k] ||= a[k];
+      if (!a.pref || !a.city) warnings.badAddress.push(raw.address);
     }
+    const birthRaw = d.birth;
     d.birth = normalizeBirth(d.birth);
+    if (birthRaw && !d.birth) warnings.badBirth.push(`${displayName(d)}（${birthRaw}）`);
     d.gender = normalizeGender(d.gender);
     d.phone = normalizePhone(d.phone);
     d.zip = normalizeZip(d.zip);
     const doneAt = raw.doneAt && !/^(未|未入力|no|false|0|-)$/i.test(raw.doneAt) ? raw.doneAt : null;
     return { name: displayName(d), data: d, memo: raw.memo || '', doneAt };
   }).filter((r) => r.data.last_name || r.data.first_name);
-  return { records, unknown };
+  return { records, unknown, duplicated, warnings };
+}
+
+// 同じ人かどうかの目印（氏名＋電話・メール・生年月日のどれか）
+export function personKey(r) {
+  const d = r.data;
+  const name = `${d.last_name}${d.first_name}`.replace(/\s/g, '');
+  const tie = (d.phone || '').replace(/\D/g, '') || (d.email || '').toLowerCase() || d.birth || '';
+  return `${name}|${tie}`;
 }
 
 export const displayName = (d) => [d.last_name, d.first_name].filter(Boolean).join(' ') || '名称未設定';

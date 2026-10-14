@@ -1,4 +1,4 @@
-import { listProfiles, getActiveProfile, setSetting, setDone, getRules, saveRules } from '../lib/db.js';
+import { listProfiles, getActiveProfile, getSetting, setSetting, setDone, getRules, saveRules } from '../lib/db.js';
 import { fillTab, scanTab, undoTab } from '../lib/fill-tab.js';
 import { FIELD_KEYS } from '../lib/keys.js';
 import { displayName, toHiragana } from '../lib/csv.js';
@@ -61,7 +61,13 @@ function renderList() {
   for (const p of all.slice(0, MAX_LIST)) {
     const li = document.createElement('li');
     li.setAttribute('role', 'option');
+    li.tabIndex = 0;
     li.setAttribute('aria-selected', String(p.id === current?.id));
+    li.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(p).then(() => $('fill').focus()); }
+      if (e.key === 'ArrowDown') { e.preventDefault(); li.nextElementSibling?.focus(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); (li.previousElementSibling || $('search')).focus(); }
+    });
     const name = document.createElement('span');
     name.textContent = (p.doneAt ? '✓ ' : '') + displayName(p.data);
     const sub = document.createElement('small');
@@ -96,6 +102,7 @@ function renderCurrent() {
 }
 
 async function select(p) {
+  confirmDone = false;
   current = p;
   await setSetting('activeProfileId', p.id);
   renderList();
@@ -104,6 +111,10 @@ async function select(p) {
 
 $('search').addEventListener('input', renderList);
 $('search').addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    $('people').querySelector('li[tabindex]')?.focus();
+  }
   if (e.key === 'Enter') {
     const first = visible()[0];
     if (first) select(first);
@@ -111,8 +122,16 @@ $('search').addEventListener('keydown', (e) => {
 });
 $('todo-only').addEventListener('change', renderList);
 
+let confirmDone = false;
 $('done-next').addEventListener('click', async () => {
   if (!current) return;
+  // 一度も入力していない人を「入力済み」にしようとしたら、もう一度押してもらう
+  if (!current.doneAt && !confirmDone && (await getSetting('lastFilledProfileId')) !== current.id) {
+    confirmDone = true;
+    showResult(`${displayName(current.data)}さんはまだこのボタンから入力していません。入力済みにしてよければ、もう一度押してください。`, true);
+    return;
+  }
+  confirmDone = false;
   if (!current.doneAt) {
     const updated = await setDone(current.id, true);
     people = people.map((p) => (p.id === updated.id ? updated : p));
@@ -139,17 +158,26 @@ function showResult(text, warn = false) {
   el.classList.toggle('warn', warn);
 }
 
+const labels = (fields, status) => fields.filter((f) => f.status === status).map((f) => `「${f.label}」`);
+
 function summarize(res) {
   if (!res) return showResult('入力できませんでした。ページを再読み込みしてお試しください。', true);
   if (res.error === 'no-profile') return showResult('名簿に人がいません。', true);
-  const filled = res.fields.filter((f) => f.status === 'filled').length;
-  const unknown = res.fields.filter((f) => f.status === 'unknown').length;
-  const kept = res.fields.filter((f) => f.status === 'kept').length;
-  if (!res.fields.length) return showResult('このページに入力欄が見つかりませんでした。', true);
-  let text = `${displayName(current.data)}さんの情報を${filled}個の欄に入力しました。`;
-  if (kept) text += ` 入力済みの${kept}欄はそのままです。`;
-  if (unknown) text += ` 判定できなかった欄が${unknown}個あります。`;
-  showResult(text, filled === 0);
+  const fields = res.fields.filter((f) => f.status !== 'other-form');
+  if (!fields.length) return showResult('このページに入力欄が見つかりませんでした。', true);
+  const filled = fields.filter((f) => f.status === 'filled');
+  const replaced = filled.filter((f) => f.replaced).length;
+  const kept = labels(fields, 'kept');
+  const noMatch = labels(fields, 'no-match');
+  const noValue = labels(fields, 'no-value');
+  const unknown = labels(fields, 'unknown');
+  const lines = [`${displayName(current.data)}さんの情報を${filled.length}個の欄に入力しました。`];
+  if (replaced) lines.push(`前の人の情報が残っていた${replaced}欄は書き換えました。`);
+  if (kept.length) lines.push(`⚠ 最初から入力されていたため、そのままにした欄: ${kept.join('')}（違う人の情報なら「入力済みの欄も上書きする」にチェックして入力し直してください）`);
+  if (noMatch.length) lines.push(`⚠ 選択肢が合わず選べなかった欄: ${noMatch.join('')}`);
+  if (noValue.length) lines.push(`名簿にデータがない欄: ${noValue.join('')}`);
+  if (unknown.length) lines.push(`判定できなかった欄: ${unknown.join('')}（「欄の割り当てを確認」で指定できます）`);
+  showResult(lines.join('\n'), filled.length === 0 || kept.length > 0 || noMatch.length > 0);
 }
 
 async function run(fn) {

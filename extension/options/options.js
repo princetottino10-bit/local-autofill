@@ -3,7 +3,7 @@ import {
   listRules, deleteRules, exportAll, importAll,
 } from '../lib/db.js';
 import { PREFECTURES } from '../lib/keys.js';
-import { decode, recordsFromCSV, toCSV, templateCSV, displayName, DATA_KEYS, toHiragana, normalizePhone, normalizeZip } from '../lib/csv.js';
+import { decode, recordsFromCSV, toCSV, templateCSV, displayName, personKey, DATA_KEYS, toHiragana, normalizePhone, normalizeZip } from '../lib/csv.js';
 
 const $ = (id) => document.getElementById(id);
 const form = $('form');
@@ -18,6 +18,7 @@ for (const p of PREFECTURES) $('pref').add(new Option(p, p));
 function status(el, text, error = false) {
   el.textContent = text;
   el.classList.toggle('error', error);
+  el.classList.remove('warn');
 }
 
 function download(name, text, type) {
@@ -142,15 +143,31 @@ $('csv-file').addEventListener('change', async (e) => {
   e.target.value = '';
   if (!file) return;
   try {
-    const { records, unknown } = recordsFromCSV(decode(await file.arrayBuffer()));
+    const { records, unknown, duplicated, warnings } = recordsFromCSV(decode(await file.arrayBuffer()));
     if (!records.length) throw new Error('取り込める行がありませんでした');
     const replace = $('replace-on-import').checked;
     if (replace && people.length && !confirm(`今の名簿（${people.length}人）を消して、${records.length}人を取り込みます。よろしいですか？`)) return;
     if (replace) await clearProfiles();
-    await addProfiles(records);
-    let msg = `${records.length}人を取り込みました。`;
-    if (unknown.length) msg += `\n使わなかった列: ${unknown.join('、')}`;
-    status($('import-status'), msg);
+    // 同じ人（氏名＋電話・メール・生年月日）がすでにいれば取り込まない
+    const seen = new Set(replace ? [] : people.map(personKey));
+    const fresh = [];
+    for (const r of records) {
+      const k = personKey(r);
+      if (!seen.has(k)) { seen.add(k); fresh.push(r); }
+    }
+    await addProfiles(fresh);
+    const lines = [`${fresh.length}人を取り込みました。`];
+    if (records.length > fresh.length) lines.push(`すでに名簿にいる${records.length - fresh.length}人は取り込みませんでした。`);
+    if (unknown.length) lines.push(`使わなかった列: ${unknown.join('、')}`);
+    lines.push(...duplicated);
+    const list = (a) => a.slice(0, 5).join('、') + (a.length > 5 ? ` ほか${a.length - 5}人` : '');
+    const warn = [];
+    if (warnings.noSpaceName.length) warn.push(`姓と名の間にスペースがないため、全部を「姓」に入れました: ${list(warnings.noSpaceName)}`);
+    if (warnings.badBirth.length) warn.push(`生年月日を読み取れませんでした（空欄にしています）: ${list(warnings.badBirth)}`);
+    if (warnings.badAddress.length) warn.push(`住所を都道府県・市区町村に分けられませんでした: ${list(warnings.badAddress)}`);
+    if (warn.length) lines.push('', '要確認：', ...warn.map((w) => `・${w}`), '一覧の行を押すと直せます。');
+    status($('import-status'), lines.join('\n'), false);
+    $('import-status').classList.toggle('warn', warn.length > 0);
     await refresh();
   } catch (err) {
     status($('import-status'), `取り込めませんでした: ${err.message}`, true);
