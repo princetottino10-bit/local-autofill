@@ -40,11 +40,13 @@
 
 友達向けの手順は [docs/INSTALL_mac.md](docs/INSTALL_mac.md) を参照してください。
 
-配布用 zip の作り方:
+友達に送るとき（ギガファイル便などで送る1ファイル）:
 
 ```sh
-npm run zip   # dist/local-autofill-<version>.zip ができる
+npm run bundle   # dist/ローカル入力_v<version>.zip（拡張機能フォルダ＋手順書HTML＋名簿ひな形CSV）
 ```
+
+拡張機能だけの zip は `npm run zip`（`dist/local-autofill-<version>.zip`）。
 
 ## 開発
 
