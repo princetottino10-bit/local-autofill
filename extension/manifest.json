@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ローカル入力",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "名簿から選んだ人の情報を、登録フォームにワンクリックで入力。データはこのパソコンの中だけに保存し、外部には送信しません。",
   "permissions": [
     "activeTab",

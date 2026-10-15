@@ -134,6 +134,46 @@ console.log('\n[単体] tricky.html（関係ないフォーム・見えない欄
   check('上書きしなかった欄を報告する', r3.fields.find((f) => f.sig === 'n:nm@0')?.status, 'kept');
   await page.close();
 }
+// ---------- 練習用フォーム（名簿の列との対応） ----------
+console.log('\n[単体] 練習用フォーム（名簿の列「ご職業」「会員番号」）');
+{
+  const csvMod = await import('../extension/lib/csv.js');
+  const roster = csvMod.recordsFromCSV(csvMod.decode(await fs.readFile(path.join(root, 'docs/practice/練習用名簿.csv'))));
+  check('練習用名簿は3人', roster.records.length, 3);
+  const names = csvMod.columnNames(roster.records);
+  check('名簿の列', names.join(), 'ご職業,会員番号');
+  const p0 = roster.records[0];
+  const data = { ...p0.data, __columns: p0.columns };
+  const page = await browser.newPage();
+  await page.goto(base.replace('/test/pages/', '/docs/practice/') + encodeURIComponent('練習用フォーム.html'));
+  await page.addScriptTag({ path: path.join(root, 'extension/content/filler.js') });
+  const r = await page.evaluate(([d, n]) => window.__localAutofill.fill(d, {}, { columnNames: n }), [data, names]);
+  const v = await values(page);
+  check('練習: 姓', v.sei, '練習');
+  check('練習: セイ（カタカナ）', v.sei_kana, 'レンシュウ');
+  check('練習: 生まれた年', v.birth_y, '1990');
+  check('練習: 性別', v.gender, '1');
+  check('練習: 都道府県（初期値「東京都」を上書き）', v.pref, '東京都');
+  check('練習: 電話3分割', `${v.tel1}-${v.tel2}-${v.tel3}`, '090-1111-2222');
+  check('練習: 確認用メール', v.mail2, 'taro@example.com');
+  check('同じ名前の列「ご職業」を自動で選ぶ', v.job, '会社員');
+  check('名前が違う「お客様番号」は判定できない欄として報告', r.fields.find((f) => f.sig === 'n:customer_no@0')?.status, 'unknown');
+  check('お問い合わせ内容は空のまま', v.message, '');
+  // 割り当てで列「会員番号」を選ぶ
+  const r2 = await page.evaluate(([d, n]) => window.__localAutofill.fill(d, { 'n:customer_no@0': 'col:会員番号' }, { columnNames: n }), [data, names]);
+  check('割り当てた列「会員番号」が入る', (await values(page)).customer_no, 'A-0001');
+  check('割り当てた欄は入力済みとして報告', r2.fields.find((f) => f.sig === 'n:customer_no@0')?.status, 'filled');
+  // 次の人（見本 花子）: 前の人の列の値も書き換える
+  const p1 = roster.records[1];
+  await page.evaluate(([d, n, prev]) => window.__localAutofill.fill(d, { 'n:customer_no@0': 'col:会員番号' }, { columnNames: n, prevData: prev }),
+    [{ ...p1.data, __columns: p1.columns }, names, data]);
+  const v2 = await values(page);
+  check('次の人: ご職業を書き換える', v2.job, '自営業');
+  check('次の人: 会員番号を書き換える', v2.customer_no, 'A-0002');
+  check('次の人: 性別を書き換える', v2.gender, '2');
+  check('次の人: 和暦の生年月日', v2.birth_y, '1993');
+  await page.close();
+}
 await browser.close();
 
 // ---------- 2) CSV 読み込み（Node で直接） ----------
@@ -225,6 +265,8 @@ await options.screenshot({ path: path.join(shots, 'options.png') });
 await options.click('#rows tr:nth-child(2)');
 await options.waitForSelector('#editor[open]');
 check('編集画面に読み込まれる', await options.inputValue('[name=city]'), '札幌市中央区');
+check('編集画面に名簿の列が出る', await options.locator('#columns input[data-column="社員番号"]').count(), 1);
+check('拡張の版が名簿画面に出る', (await options.textContent('#version')).startsWith('v'), true);
 await options.keyboard.press('Escape');
 const backToRow = await options.waitForFunction(() => document.activeElement?.tagName === 'TR', null, { timeout: 2000 }).then(() => 'TR', () => 'その他');
 check('Escで編集画面を閉じると一覧の行に戻る', backToRow, 'TR');
@@ -248,6 +290,7 @@ for (const [k, v] of Object.entries(EXPECT['furusato.html'])) check(`通し: ${k
 // 割り当て確認: 「ご希望の物件名」を建物名として保存 → 入力し直し
 await popup.click('#review');
 await popup.waitForSelector('#field-list select');
+check('割り当ての選択肢に名簿の列が出る', await popup.locator('select[data-sig="n:prop@0"] option[value="col:社員番号"]').count(), 1);
 await popup.selectOption('select[data-sig="n:prop@0"]', 'building');
 await popup.click('#save-rules');
 await popup.waitForFunction(() => document.querySelector('#result').textContent.includes('12個'));

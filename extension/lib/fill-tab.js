@@ -1,4 +1,9 @@
-import { getActiveProfile, getProfile, getRules, getSetting, setSetting } from './db.js';
+import { getActiveProfile, getProfile, getRules, getSetting, setSetting, listProfiles } from './db.js';
+import { columnNames } from './csv.js';
+
+// 入力処理に渡すデータ（決まった項目＋名簿の列）
+const withColumns = (p) => (p ? { ...p.data, __columns: p.columns || {} } : null);
+const allColumnNames = async () => columnNames(await listProfiles());
 
 async function inject(tabId) {
   await chrome.scripting.executeScript({ target: { tabId }, files: ['content/filler.js'] });
@@ -26,14 +31,16 @@ export async function fillTab(tabId, { profileId, overwrite = false } = {}) {
   // 前に入力した人のデータ。ページに残っていたら上書きして、2人の情報が混ざらないようにする
   const lastId = await getSetting('lastFilledProfileId');
   const prev = lastId != null && lastId !== profile.id ? await getProfile(lastId) : null;
-  const res = await call(tabId, 'fill', profile.data, rules, { overwrite, prevData: prev?.data || null });
+  const res = await call(tabId, 'fill', withColumns(profile), rules, {
+    overwrite, prevData: withColumns(prev), columnNames: await allColumnNames(),
+  });
   if (res?.fields?.some((f) => f.status === 'filled')) await setSetting('lastFilledProfileId', profile.id);
   return res;
 }
 
 export async function scanTab(tabId) {
   const rules = await getRules(await hostOf(tabId));
-  return call(tabId, 'scan', rules);
+  return call(tabId, 'scan', rules, await allColumnNames());
 }
 
 export const undoTab = (tabId) => call(tabId, 'undo');

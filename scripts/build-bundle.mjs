@@ -13,15 +13,17 @@ await fs.mkdir(top, { recursive: true });
 await fs.cp(`${repo}/extension`, path.join(top, 'local-autofill-extension'), { recursive: true });
 const csv = await import(`${repo}/extension/lib/csv.js`);
 await fs.writeFile(path.join(top, '名簿ひな形.csv'), csv.templateCSV());
+await fs.cp(path.join(repo, 'docs/practice'), path.join(top, '練習用'), { recursive: true });
 
 let md = await fs.readFile(`${repo}/docs/INSTALL_mac.md`, 'utf8');
 md = md.replace(/## 1\. ファイルを置く[\s\S]*?(?=## 2\.)/, `## 1. ファイルを置く
 
 1. 受け取ったファイル（\`ローカル入力_v${version}.zip\`）をダブルクリックして展開します。
-2. できた「local-autofill-v${version}」フォルダの中に、次の3つが入っています。
+2. できた「local-autofill-v${version}」フォルダの中に、次のものが入っています。
    - \`local-autofill-extension\` … 拡張機能の本体（このフォルダを Chrome に読み込みます）
    - \`はじめにお読みください.html\` … この手順書
    - \`名簿ひな形.csv\` … 名簿の見本
+   - \`練習用\` … 練習用のフォームと架空の名簿（「5. 練習してみる」）
 3. 「local-autofill-v${version}」フォルダごと、「書類」など消さない場所に移動します。
    - **このフォルダを削除すると拡張機能が動かなくなります。**ダウンロードフォルダに置いたままにしないでください。
    - **読み込んだ後は、フォルダの場所を変えないでください。**別の場所に移して読み込み直すと Chrome からは別の拡張機能として扱われ、名簿が空に見えます（元の場所に戻すと見えます）。移したいときは、先に名簿画面の「バックアップを書き出す」で保存してから移し、移した先で「バックアップから復元」してください。

@@ -3,7 +3,7 @@ import {
   listRules, deleteRules, exportAll, importAll,
 } from '../lib/db.js';
 import { PREFECTURES } from '../lib/keys.js';
-import { decode, recordsFromCSV, toCSV, templateCSV, displayName, personKey, DATA_KEYS, toHiragana, normalizePhone, normalizeZip } from '../lib/csv.js';
+import { decode, recordsFromCSV, toCSV, templateCSV, displayName, personKey, columnNames, DATA_KEYS, toHiragana, normalizePhone, normalizeZip } from '../lib/csv.js';
 
 const $ = (id) => document.getElementById(id);
 const form = $('form');
@@ -14,6 +14,7 @@ let currentId = null;
 let shown = PAGE;
 
 for (const p of PREFECTURES) $('pref').add(new Option(p, p));
+$('version').textContent = `v${chrome.runtime.getManifest().version}`;
 
 function status(el, text, error = false) {
   el.textContent = text;
@@ -104,6 +105,22 @@ function openEditor(id) {
   form.reset();
   for (const k of DATA_KEYS) form[k].value = p?.data?.[k] ?? '';
   form.memo.value = p?.memo ?? '';
+  // 名簿全体に出てくる列を、この人の値つきで並べる
+  const box = $('columns');
+  box.replaceChildren();
+  const names = columnNames(people);
+  for (const name of names) {
+    const label = document.createElement('label');
+    const span = document.createElement('span');
+    span.textContent = name;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.dataset.column = name;
+    input.value = p?.columns?.[name] ?? '';
+    label.append(span, input);
+    box.append(label);
+  }
+  $('no-columns').hidden = names.length > 0;
   form.done.checked = !!p?.doneAt;
   $('done-at').textContent = p?.doneAt ? `（${p.doneAt}）` : '';
   $('editor-title').textContent = p ? displayName(p.data) : '新しい人を追加';
@@ -138,7 +155,11 @@ form.addEventListener('submit', async (e) => {
   data.phone = normalizePhone(data.phone);
   data.zip = normalizeZip(data.zip);
   const old = people.find((x) => x.id === currentId);
-  const p = { name: displayName(data), data, memo: form.memo.value.trim(),
+  const columns = {};
+  for (const input of $('columns').querySelectorAll('input[data-column]')) {
+    if (input.value.trim()) columns[input.dataset.column] = input.value.trim();
+  }
+  const p = { name: displayName(data), data, columns, memo: form.memo.value.trim(),
     doneAt: form.done.checked ? old?.doneAt || new Date().toLocaleString('ja-JP') : null };
   if (currentId != null) p.id = currentId;
   currentId = await saveProfile(p);
@@ -181,7 +202,7 @@ $('csv-file').addEventListener('change', async (e) => {
     await addProfiles(fresh);
     const lines = [`${fresh.length}人を取り込みました。`];
     if (records.length > fresh.length) lines.push(`すでに名簿にいる${records.length - fresh.length}人は取り込みませんでした。`);
-    if (unknown.length) lines.push(`使わなかった列: ${unknown.join('、')}`);
+    if (unknown.length) lines.push(`名簿の列として保存した列: ${unknown.join('、')}（フォームに同じ名前の欄があれば自動で入力します。名前が違う欄は、ポップアップの「欄の割り当てを確認」で列を選べます）`);
     lines.push(...duplicated);
     const list = (a) => a.slice(0, 5).join('、') + (a.length > 5 ? ` ほか${a.length - 5}人` : '');
     const warn = [];

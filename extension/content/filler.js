@@ -325,7 +325,27 @@
     return (pick || '(名称なし)').slice(0, 30);
   }
 
-  function collect(rules) {
+  // 欄名とCSVの見出しを比べるための正規化（「ご職業（必須）」→「職業」）
+  function normLabel(t) {
+    return (t || '').replace(/必須|任意|[※*＊]/g, '').replace(/[\s　（）()［］\[\]【】「」『』:：・\/／\-－_]/g, '').replace(/^[ごお御]/, '').toLowerCase();
+  }
+
+  // 名簿の列（CSVの見出し）と同じ名前の欄には、その列を割り当てる
+  function matchColumns(fields, columnNames) {
+    const cols = (columnNames || []).map((k) => [k, normLabel(k)]).filter(([, n]) => n.length >= 2);
+    if (!cols.length) return;
+    for (const f of fields) {
+      const cands = [f.label, f.c.label, f.c.prev, f.c.header].map(normLabel).filter((n) => n.length >= 2);
+      const exact = cols.find(([, n]) => cands.includes(n));
+      if (exact) { f.key = `col:${exact[0]}`; continue; }
+      // 部分一致は、決まった項目として判定できなかった欄だけ（例：「ご職業を選択」と列「職業」）
+      if (f.key && f.key !== 'skip') continue;
+      const part = cols.find(([, n]) => cands.some((c) => c.includes(n) || n.includes(c)));
+      if (part) f.key = `col:${part[0]}`;
+    }
+  }
+
+  function collect(rules, columnNames) {
     const els = [...document.querySelectorAll(CONTROL_SEL)].filter(isCandidate);
     const seenRadio = new Set();
     const fields = [];
@@ -366,10 +386,9 @@
       i = j;
     }
 
-    for (const f of fields) {
-      if (!f.key) f.key = finalKey(f);
-      if (rules && rules[f.sig]) f.key = rules[f.sig];
-    }
+    for (const f of fields) if (!f.key) f.key = finalKey(f);
+    matchColumns(fields, columnNames);
+    for (const f of fields) if (rules && rules[f.sig]) f.key = rules[f.sig];
     return fields;
   }
 
@@ -447,6 +466,7 @@
   }
 
   function valueFor(f, d, plan) {
+    if (f.key?.startsWith('col:')) return (d.__columns || {})[f.key.slice(4)] || '';
     const c = f.c;
     const birth = (d.birth || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
     const zip = digits(d.zip);
@@ -547,7 +567,7 @@
     const cur = currentValue(f.el);
     if (!cur) return false;
     if (f.el.tagName === 'SELECT') return findOption(f.el, f.key, v)?.value === cur && !isEmpty(f.el);
-    if (f.el.type === 'radio') return radioFor(f.el, v)?.value === cur && !isEmpty(f.el);
+    if (f.el.type === 'radio') return radioFor(f.el, v, f.key)?.value === cur && !isEmpty(f.el);
     return cur === v;
   }
 
@@ -560,7 +580,7 @@
     const pv = valueFor(f, prevData, plan);
     if (!pv) return false;
     if (f.el.tagName === 'SELECT') return findOption(f.el, f.key, pv)?.value === cur;
-    if (f.el.type === 'radio') return radioFor(f.el, pv)?.value === cur;
+    if (f.el.type === 'radio') return radioFor(f.el, pv, f.key)?.value === cur;
     return pv === cur;
   }
 
@@ -573,10 +593,17 @@
     el.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
-  function radioFor(el, v) {
-    const radios = [...document.querySelectorAll(`input[type=radio][name="${CSS.escape(el.name)}"]`)];
+  function radioFor(el, v, key = 'gender') {
+    const radios = radioGroup(el);
+    const textOfRadio = (r) => lower(`${labelText(r)} ${siblingText(r, 'next')}`);
+    if (key !== 'gender') {
+      // 名簿の列の値と同じ選択肢（なければ値を含む選択肢）
+      const want = normLabel(v);
+      return radios.find((r) => normLabel(textOfRadio(r)) === want || normLabel(r.value) === want)
+        || radios.find((r) => want && normLabel(textOfRadio(r)).includes(want));
+    }
     return radios.find((r) => {
-      const t = lower(`${labelText(r)} ${siblingText(r, 'next')} ${r.value}`);
+      const t = lower(`${textOfRadio(r)} ${r.value}`);
       if (v === 'male') return /男|(^|[^e])male|^m$/.test(t);
       if (v === 'female') return /女|female|^f$/.test(t);
       return /その他|other|回答しない/.test(t);
@@ -605,7 +632,7 @@
   }
 
   function fill(data, rules, opts = {}) {
-    const fields = collect(rules);
+    const fields = collect(rules, opts.columnNames);
     const main = mainGroup(fields);
     const inMain = fields.filter((f) => f.group === main);
     const present = new Set(inMain.map((f) => f.key).filter(Boolean));
@@ -628,7 +655,7 @@
       }
       const el = f.el;
       if (el.type === 'radio') {
-        const r = radioFor(el, v);
+        const r = radioFor(el, v, f.key);
         if (!r) { entry.status = 'no-match'; continue; }
         const checked = document.querySelector(`input[type=radio][name="${CSS.escape(el.name)}"]:checked`);
         changes.push({ el: r, radio: true, prevChecked: checked });
@@ -654,8 +681,8 @@
     return { host: location.hostname, fields: report };
   }
 
-  function scan(rules) {
-    const fields = collect(rules);
+  function scan(rules, columnNames) {
+    const fields = collect(rules, columnNames);
     const main = mainGroup(fields);
     return { host: location.hostname, fields: fields.filter((f) => f.group === main).map((f) => ({ sig: f.sig, label: f.label, key: f.key, status: 'scan' })) };
   }

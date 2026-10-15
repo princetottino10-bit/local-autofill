@@ -11,7 +11,7 @@
   <header class="page-head">
     <img src="../icons/icon48.png" alt="" width="36" height="36">
     <div>
-      <h1>ローカル入力</h1>
+      <h1>ローカル入力 <span class="version" id="version"></span></h1>
       <p>名簿はこのパソコンのChromeの中だけに保存されます。外部のサーバーには送信しません。</p>
     </div>
   </header>
@@ -107,6 +107,13 @@
       </fieldset>
 
       <fieldset>
+        <legend>名簿の列（CSVの見出し）</legend>
+        <p class="hint">CSVの決まった項目以外の列です。フォームに同じ名前の欄があれば自動で入力し、名前が違う欄にはポップアップの「欄の割り当てを確認」で列を選べます。</p>
+        <div class="grid2" id="columns"></div>
+        <p class="hint" id="no-columns">この名簿には、決まった項目以外の列はありません。</p>
+      </fieldset>
+
+      <fieldset>
         <legend>その他</legend>
         <div class="grid2">
           <label><span>会社名</span><input type="text" name="company"></label>
@@ -129,6 +136,7 @@
     <h2>CSVの作り方</h2>
     <ul class="hint-list">
       <li>1行目に見出し、2行目から1人1行。見出しは「姓・名・せい・めい・生年月日・性別・メールアドレス・電話番号・郵便番号・都道府県・市区町村・番地・建物名」など（ひな形CSVを参考に）。</li>
+      <li><b>見出しは自由に変えたり足したりできます。</b>上の決まった項目に当たらない見出し（例：「ご職業」「会員番号」）も「名簿の列」として保存し、フォームに同じ名前の欄があれば自動で入力します。名前が違う欄は、ポップアップの「欄の割り当てを確認」でその列を選ぶと、サイトごとに覚えます。</li>
       <li>「氏名」「ふりがな」が1列でも、間にスペースがあれば姓と名に分けます。「住所」1列でも都道府県・市区町村を自動で分けます（目安なので確認してください）。</li>
       <li>生年月日は「1990/4/1」「平成2年4月1日」「H2.4.1」などに対応。Excelで消えた電話番号・郵便番号の先頭の0も補います。</li>
       <li>Numbers は「書き出す → CSV」、Excel は「CSV UTF-8」または「CSV（コンマ区切り）」で保存したものをそのまま取り込めます。</li>

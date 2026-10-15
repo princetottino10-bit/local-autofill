@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>練習用フォーム（ローカル入力）</title>
+<style>
+  :root { --bg: #f4f6f5; --sheet: #fff; --ink: #1b2420; --muted: #5f6c66; --rule: #d8dfdb; --req: #c8102e; --accent: #1f7a5a; color-scheme: light; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #121815; --sheet: #1a221e; --ink: #e5ece8; --muted: #9cafa6; --rule: #2e3a35; --req: #ff6b7d; --accent: #4cc394; color-scheme: dark; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.7 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif; padding: 24px 16px 60px; }
+  main { max-width: 760px; margin: 0 auto; }
+  .note { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 16px; font-size: 14px; color: var(--muted); }
+  h1 { font-size: 22px; margin: 0 0 12px; }
+  form { background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; padding: 8px 20px 20px; margin-top: 16px; }
+  .row { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px dashed var(--rule); }
+  .lab { font-weight: 600; }
+  .req { background: var(--req); color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 3px; margin-left: 6px; font-weight: 400; }
+  input[type=text], input[type=email], input[type=tel], select, textarea { font: inherit; color: inherit; background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 8px; }
+  input.wide, textarea { width: 100%; box-sizing: border-box; }
+  .inline { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  button { margin-top: 18px; font: inherit; font-weight: 700; background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 10px 24px; cursor: pointer; }
+  #done { margin-top: 12px; color: var(--accent); font-weight: 600; }
+  @media (max-width: 560px) { .row { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>練習用フォーム</h1>
+  <p class="note">ローカル入力の練習用です。送信しても、どこにも送られません。ツールバーの「ローカル入力」から人を選んで「この人をページに入力」を押してみてください。「お客様番号」の欄は名前が名簿の列（会員番号）と違うので、「欄の割り当てを確認」で列「会員番号」を選ぶ練習ができます。</p>
+  <form id="practice">
+    <div class="row"><div class="lab">お名前<span class="req">必須</span></div><div class="inline">姓 <input type="text" name="sei" size="10"> 名 <input type="text" name="mei" size="10"></div></div>
+    <div class="row"><div class="lab">フリガナ<span class="req">必須</span></div><div class="inline">セイ <input type="text" name="sei_kana" size="10"> メイ <input type="text" name="mei_kana" size="10"></div></div>
+    <div class="row"><div class="lab">生年月日</div><div class="inline">
+      <select name="birth_y"><option value="">----</option></select>年
+      <select name="birth_m"><option value="">--</option></select>月
+      <select name="birth_d"><option value="">--</option></select>日</div></div>
+    <div class="row"><div class="lab">性別</div><div class="inline"><label><input type="radio" name="gender" value="1"> 男性</label> <label><input type="radio" name="gender" value="2"> 女性</label> <label><input type="radio" name="gender" value="9"> 回答しない</label></div></div>
+    <div class="row"><div class="lab">郵便番号<span class="req">必須</span></div><div class="inline">〒 <input type="text" name="zip1" size="4" maxlength="3"> - <input type="text" name="zip2" size="5" maxlength="4"></div></div>
+    <div class="row"><div class="lab">都道府県<span class="req">必須</span></div><div><select name="pref" id="pref"></select></div></div>
+    <div class="row"><div class="lab">市区町村<span class="req">必須</span></div><div><input type="text" name="city" class="wide"></div></div>
+    <div class="row"><div class="lab">番地<span class="req">必須</span></div><div><input type="text" name="addr" class="wide"></div></div>
+    <div class="row"><div class="lab">建物名・部屋番号</div><div><input type="text" name="bldg" class="wide"></div></div>
+    <div class="row"><div class="lab">電話番号<span class="req">必須</span></div><div class="inline"><input type="tel" name="tel1" size="4" maxlength="4"> - <input type="tel" name="tel2" size="5" maxlength="4"> - <input type="tel" name="tel3" size="5" maxlength="4"></div></div>
+    <div class="row"><div class="lab">メールアドレス<span class="req">必須</span></div><div><input type="email" name="mail" class="wide"></div></div>
+    <div class="row"><div class="lab">メールアドレス（確認）</div><div><input type="email" name="mail2" class="wide"></div></div>
+    <div class="row"><div class="lab">ご職業</div><div><select name="job"><option value="">選択してください</option><option>会社員</option><option>自営業</option><option>公務員</option><option>学生</option><option>その他</option></select></div></div>
+    <div class="row"><div class="lab">お客様番号</div><div><input type="text" name="customer_no" class="wide"></div></div>
+    <div class="row"><div class="lab">お問い合わせ内容</div><div><textarea name="message" rows="3"></textarea></div></div>
+    <button type="submit">送信する（練習）</button>
+    <p id="done" role="status"></p>
+  </form>
+</main>
+<script>
+  const prefs = ['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
+  const pref = document.getElementById('pref');
+  prefs.forEach((p) => pref.add(new Option(p, p, p === '東京都', p === '東京都')));
+  const fillNums = (name, from, to) => { const s = document.querySelector(`[name=${name}]`); for (let i = from; i <= to; i++) s.add(new Option(String(i), String(i))); };
+  fillNums('birth_y', 1940, 2010); fillNums('birth_m', 1, 12); fillNums('birth_d', 1, 31);
+  document.getElementById('practice').addEventListener('submit', (e) => {
+    e.preventDefault();
+    document.getElementById('done').textContent = '送信しました（練習なので、実際にはどこにも送られていません）。';
+  });
+</script>
+</body>
+</html>

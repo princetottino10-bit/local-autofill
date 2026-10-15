@@ -234,7 +234,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 22px; font-size: 13px; 
     <h2>使い方は3ステップ</h2>
     <p class="sub">最初に名簿を取り込めば、あとはフォームを開くたびに人を選んで押すだけです。</p>
     <ol class="steps">
-      <li><h3>名簿を取り込む</h3><p>Numbers や Excel で作った名簿をCSVで保存して取り込みます。「氏名」「フリガナ」「住所」が1列ずつでも自動で分け、読めなかった値は取り込み時に知らせます。</p></li>
+      <li><h3>名簿を取り込む</h3><p>Numbers や Excel で作った名簿をCSVで保存して取り込みます。見出しは自由に付けられます。「氏名」「フリガナ」「住所」が1列ずつでも自動で分け、読めなかった値は取り込み時に知らせます。</p></li>
       <li><h3>人を選んで入力</h3><p>ツールバーのボタンから名前・ふりがな・電話番号で検索して選び、「この人をページに入力」。ショートカット <span class="mono">⌥⇧F</span> でも入力できます。</p></li>
       <li><h3>確認して、次の人へ</h3><p>内容を確かめて自分で送信。「入力済みにして次の人へ」で次の未入力の人に進みます。進み具合は名簿画面で一覧できます。</p></li>
     </ol>
@@ -289,7 +289,8 @@ footer { border-top: 1px solid var(--rule); padding-top: 22px; font-size: 13px; 
       <div class="chip"><b>前の人の情報は書き換え</b><span class="ex">鈴木 花子 → <em>高橋 一郎</em>（手入力の値は残す）</span></div>
       <div class="chip"><b>初期値も直す</b><span class="ex">都道府県が最初から「東京都」→ <em>北海道</em></span></div>
       <div class="chip"><b>入力するフォームを選ぶ</b><span class="ex">ログイン欄・メルマガ欄には入れない</span></div>
-      <div class="chip"><b>間違えた欄は覚え直す</b><span class="ex">サイトごとに割り当てを保存</span></div>
+      <div class="chip"><b>CSVの見出しで対応</b><span class="ex">列「ご職業」→ フォームの「ご職業」欄に<em>自動で</em></span></div>
+      <div class="chip"><b>名前が違う欄も覚える</b><span class="ex">「お客様番号」← 列「<em>会員番号</em>」をサイトごとに保存</span></div>
     </div>
   </section>
 
@@ -321,7 +322,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 22px; font-size: 13px; 
       <div>
         <p class="dl-card-title">ローカル入力 <span class="mono" data-release-version>…</span></p>
         <p class="dl-meta" data-release-meta>&nbsp;</p>
-        <p class="dl-contents">中身：拡張機能のフォルダ（<code>local-autofill-extension</code>）・手順書（はじめにお読みください.html）・名簿のひな形CSV</p>
+        <p class="dl-contents">中身：拡張機能のフォルダ（<code>local-autofill-extension</code>）・手順書（はじめにお読みください.html）・名簿のひな形CSV・練習用のフォームと架空の名簿</p>
       </div>
       <button class="dl-btn" type="button" data-download>ダウンロード</button>
     </div>

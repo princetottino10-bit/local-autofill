@@ -1,7 +1,7 @@
 import { listProfiles, getActiveProfile, getSetting, setSetting, setDone, getRules, saveRules } from '../lib/db.js';
 import { fillTab, scanTab, undoTab } from '../lib/fill-tab.js';
 import { FIELD_KEYS } from '../lib/keys.js';
-import { displayName, toHiragana } from '../lib/csv.js';
+import { displayName, toHiragana, columnNames } from '../lib/csv.js';
 
 const $ = (id) => document.getElementById(id);
 const MAX_LIST = 50;
@@ -178,7 +178,7 @@ function summarize(res) {
   if (kept.length) lines.push(`⚠ 最初から入力されていたため、そのままにした欄: ${kept.join('')}（違う人の情報なら「入力済みの欄も上書きする」にチェックして入力し直してください）`);
   if (noMatch.length) lines.push(`⚠ 選択肢が合わず選べなかった欄: ${noMatch.join('')}`);
   if (noValue.length) lines.push(`名簿にデータがない欄: ${noValue.join('')}`);
-  if (unknown.length) lines.push(`判定できなかった欄: ${unknown.join('')}（「欄の割り当てを確認」で指定できます）`);
+  if (unknown.length) lines.push(`判定できなかった欄: ${unknown.join('')}（「欄の割り当てを確認」で項目や名簿の列を指定できます）`);
   showResult(lines.join('\n'), filled.length === 0 || kept.length > 0 || noMatch.length > 0);
 }
 
@@ -228,7 +228,19 @@ function renderReview(res) {
     sel.dataset.sig = f.sig;
     sel.dataset.original = f.key || '';
     sel.add(new Option('（判定できず）', ''));
-    for (const [k, text] of FIELD_KEYS) sel.add(new Option(text, k, false, k === f.key));
+    const standard = document.createElement('optgroup');
+    standard.label = '決まった項目';
+    for (const [k, text] of FIELD_KEYS) standard.append(new Option(text, k, false, k === f.key));
+    sel.append(standard);
+    // 名簿の列（CSVの見出し）。割り当て済みの列が今の名簿にない場合も残して表示する
+    const cols = columnNames(people);
+    if (f.key?.startsWith('col:') && !cols.includes(f.key.slice(4))) cols.push(f.key.slice(4));
+    if (cols.length) {
+      const group = document.createElement('optgroup');
+      group.label = '名簿の列（CSVの見出し）';
+      for (const name of cols) group.append(new Option(`列「${name}」`, `col:${name}`, false, f.key === `col:${name}`));
+      sel.append(group);
+    }
     li.append(label, sel);
     list.append(li);
   }
