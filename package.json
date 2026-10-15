@@ -7,7 +7,8 @@
     "icons": "node scripts/make-icons.mjs",
     "test": "node test/run.mjs",
     "zip": "sh scripts/build-zip.sh",
-    "bundle": "node scripts/build-bundle.mjs"
+    "bundle": "node scripts/build-bundle.mjs",
+    "site": "node scripts/build-site.mjs"
   },
   "devDependencies": {
     "marked": "^14.1.4",

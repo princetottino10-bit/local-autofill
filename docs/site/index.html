@@ -1,0 +1,481 @@
+<title>ローカル入力</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 申込用紙のような罫線の帳票を土台に、左に名簿・右にフォームの実演を置く */
+:root {
+  --paper: #f2f5f2;
+  --sheet: #ffffff;
+  --ink: #16211c;
+  --ink-soft: #5a6862;
+  --rule: #d5ddd8;
+  --green: #1f7a5a;
+  --green-soft: #e1f0e8;
+  --required: #c8102e;
+  --marker: #ffd166;
+  --marker-ink: #3d2e00;
+  --marker-hl: #ffd166;
+  --display: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #111815; --sheet: #19221e; --ink: #e6ede9; --ink-soft: #9db0a7; --rule: #2c3833;
+    --green: #47c393; --green-soft: #1b3229; --required: #ff6b7d; --marker: #f2c14e; --marker-ink: #2b2000; --marker-hl: rgba(242, 193, 78, .38);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #111815; --sheet: #19221e; --ink: #e6ede9; --ink-soft: #9db0a7; --rule: #2c3833;
+  --green: #47c393; --green-soft: #1b3229; --required: #ff6b7d; --marker: #f2c14e; --marker-ink: #2b2000; --marker-hl: rgba(242, 193, 78, .38);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.85 var(--body);
+  padding-inline: 20px;
+  padding-block: 0 64px;
+}
+.wrap { max-width: 1040px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.35; }
+p { margin: 0; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- ヘッダー ---------- */
+.bar { display: flex; align-items: center; gap: 10px; padding-block: 20px; }
+.bar img { width: 32px; height: 32px; }
+.bar strong { font-family: var(--display); font-size: 17px; }
+.bar span { margin-left: auto; font-size: 13px; color: var(--ink-soft); }
+
+/* ---------- ヒーロー ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 40px; align-items: center; padding-block: 28px 56px; }
+.eyebrow { font-size: 13px; letter-spacing: .08em; color: var(--green); font-weight: 700; margin-bottom: 14px; }
+.hero h1 { font-size: clamp(28px, 4.4vw, 46px); font-weight: 900; letter-spacing: -.01em; }
+.hero h1 .ph { display: inline-block; }
+.hero h1 mark { background: linear-gradient(transparent 62%, var(--marker-hl) 62%); color: inherit; padding: 0 2px; }
+.lede { margin-top: 20px; font-size: 17px; color: var(--ink-soft); max-width: 30em; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; padding: 0; list-style: none; }
+.facts li { border: 1px solid var(--rule); background: var(--sheet); border-radius: 99px; padding: 4px 12px; font-size: 13px; }
+
+/* 実演 */
+.demo { background: var(--sheet); border: 1px solid var(--rule); border-radius: 14px; box-shadow: 0 18px 40px -24px rgba(20, 50, 35, .35); overflow: hidden; }
+.demo-top { display: flex; align-items: center; gap: 6px; padding: 9px 14px; border-bottom: 1px solid var(--rule); font-size: 12px; color: var(--ink-soft); }
+.demo-top i { width: 9px; height: 9px; border-radius: 50%; background: var(--rule); }
+.demo-top span { margin-left: 8px; }
+.demo-body { display: grid; grid-template-columns: 172px minmax(0, 1fr); }
+.roster { border-right: 1px solid var(--rule); padding: 12px; display: flex; flex-direction: column; gap: 6px; background: var(--paper); }
+.roster h3 { font-size: 12px; color: var(--ink-soft); font-weight: 700; }
+.roster small { font-size: 11px; color: var(--ink-soft); }
+.person { all: unset; cursor: pointer; display: grid; gap: 0; padding: 7px 9px; border-radius: 8px; border: 1px solid transparent; font-size: 14px; line-height: 1.4; }
+.person:hover { background: var(--sheet); }
+.person:focus-visible { outline: 2px solid var(--green); }
+.person[aria-pressed="true"] { background: var(--sheet); border-color: var(--green); }
+.person span { font-size: 11px; color: var(--ink-soft); }
+.person .done { color: var(--green); font-weight: 700; }
+.fill-btn { all: unset; cursor: pointer; margin-top: auto; text-align: center; background: var(--green); color: var(--sheet); font-weight: 700; font-size: 13px; padding: 9px 6px; border-radius: 8px; }
+.fill-btn:hover { filter: brightness(1.08); }
+.fill-btn:focus-visible { outline: 2px solid var(--marker); outline-offset: 2px; }
+.next-btn { all: unset; cursor: pointer; text-align: center; border: 1px solid var(--green); color: var(--green); font-weight: 700; font-size: 12px; padding: 7px 6px; border-radius: 8px; }
+.next-btn:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
+.form { padding: 6px 16px 14px; min-width: 0; }
+.row { display: grid; grid-template-columns: 104px minmax(0, 1fr); align-items: center; gap: 10px; padding-block: 7px; border-bottom: 1px dashed var(--rule); font-size: 13px; }
+.row:last-child { border-bottom: 0; }
+.lab { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.req { background: var(--required); color: #fff; font-size: 10px; padding: 0 5px; border-radius: 3px; line-height: 1.7; }
+.box { min-height: 30px; border: 1px solid var(--rule); border-radius: 6px; padding: 4px 9px; background: var(--sheet); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: border-color .3s, box-shadow .3s; }
+.box.on { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-soft); }
+.zip { display: flex; align-items: center; gap: 6px; }
+.zip .box { width: 64px; }
+.zip .box + span + .box { width: 76px; }
+.sel::after { content: "▾"; float: right; color: var(--ink-soft); }
+.demo-note { padding: 8px 14px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--ink-soft); }
+.demo-note b { color: var(--green); }
+
+/* ---------- セクション ---------- */
+section.block { padding-block: 52px; border-top: 1px solid var(--rule); }
+.block > h2 { font-size: clamp(24px, 3.4vw, 32px); font-weight: 900; }
+.block > .sub { color: var(--ink-soft); margin-top: 8px; max-width: 40em; }
+
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 28px; padding: 0; list-style: none; counter-reset: s; }
+.steps li { counter-increment: s; background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; padding: 20px; }
+.steps li::before { content: counter(s); font-family: var(--mono); font-size: 13px; color: var(--green); border: 1.5px solid var(--green); border-radius: 50%; width: 26px; height: 26px; display: grid; place-items: center; margin-bottom: 12px; }
+.steps h3 { font-size: 18px; }
+.steps p { margin-top: 6px; font-size: 14px; color: var(--ink-soft); }
+
+.privacy { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; margin-top: 28px; align-items: start; }
+.flow { background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; padding: 20px; }
+.flow svg { width: 100%; height: auto; display: block; }
+.flow svg text { font-family: var(--body); fill: var(--ink); }
+.flow svg .soft { fill: var(--ink-soft); }
+.points { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.points li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; }
+.points li::before { content: ""; width: 14px; height: 8px; border-left: 2.5px solid var(--green); border-bottom: 2.5px solid var(--green); transform: rotate(-45deg); margin-top: 8px; }
+.points b { display: block; font-family: var(--display); }
+.points span { color: var(--ink-soft); font-size: 14px; }
+
+.chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-top: 26px; }
+.chip { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; }
+.chip b { font-family: var(--display); display: block; font-size: 15px; }
+.chip .ex { display: block; margin-top: 6px; font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
+.chip .ex em { font-style: normal; color: var(--green); }
+
+.shots { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 24px; margin-top: 28px; align-items: start; }
+.shots figure { margin: 0; }
+.shots img { border: 1px solid var(--rule); border-radius: 10px; display: block; width: 100%; }
+.shots figcaption { font-size: 13px; color: var(--ink-soft); margin-top: 8px; }
+
+.limits { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 28px; margin-top: 22px; padding: 0; list-style: none; }
+.limits li { padding: 12px 0; border-bottom: 1px solid var(--rule); font-size: 15px; }
+.limits li span { display: block; font-size: 13px; color: var(--ink-soft); }
+
+.start { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 28px; margin-top: 26px; align-items: start; }
+.start ol { margin: 0; padding-left: 1.4em; display: grid; gap: 8px; }
+.start code { font-family: var(--mono); font-size: 13px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 5px; padding: 1px 6px; }
+.need { background: var(--green-soft); border-radius: 12px; padding: 18px 20px; font-size: 14px; display: grid; gap: 8px; }
+.need b { font-family: var(--display); font-size: 15px; }
+
+.dl-hero { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 26px; }
+.dl-btn { all: unset; cursor: pointer; background: var(--green); color: var(--sheet); font-family: var(--display); font-weight: 700; font-size: 16px; padding: 12px 22px; border-radius: 10px; text-align: center; }
+.dl-btn:hover { filter: brightness(1.08); }
+.dl-btn:focus-visible { outline: 3px solid var(--marker); outline-offset: 2px; }
+.dl-btn[aria-busy="true"] { opacity: .7; cursor: progress; }
+.dl-more { color: var(--green); font-size: 14px; }
+.dl-meta { margin-top: 8px; font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.dl-card { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; margin-top: 24px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; padding: 18px 20px; }
+.dl-card > div { min-width: 0; flex: 1 1 320px; }
+.dl-card-title { font-family: var(--display); font-weight: 900; font-size: 20px; }
+.dl-contents { margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
+.dl-contents code, .start code { font-family: var(--mono); font-size: 12px; background: var(--paper); border: 1px solid var(--rule); border-radius: 5px; padding: 1px 6px; }
+.dl-status { min-height: 1.6em; margin-top: 10px; font-size: 14px; }
+.dl-status.error { color: var(--required); }
+.start h3 { font-size: 16px; margin: 4px 0 8px; }
+.start ol + h3 { margin-top: 22px; }
+.hint-line { margin-top: 12px; font-size: 13px; color: var(--ink-soft); }
+.log-title { font-size: 16px; margin-top: 36px; }
+.changelog { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 14px; }
+.changelog li { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 4px 16px; }
+.changelog .ver { font-family: var(--mono); font-size: 13px; color: var(--green); }
+.changelog .ver small { display: block; color: var(--ink-soft); }
+.changelog ul { margin: 0; padding-left: 1.1em; font-size: 14px; }
+@media (max-width: 520px) { .changelog li { grid-template-columns: minmax(0, 1fr); } .dl-btn { width: 100%; } }
+footer { border-top: 1px solid var(--rule); padding-top: 22px; font-size: 13px; color: var(--ink-soft); }
+
+@media (max-width: 860px) {
+  .hero, .privacy, .shots, .start { grid-template-columns: minmax(0, 1fr); }
+  .steps { grid-template-columns: minmax(0, 1fr); }
+  .limits { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) {
+  body { padding-inline: 16px; }
+  .demo-body { grid-template-columns: minmax(0, 1fr); }
+  .roster { border-right: 0; border-bottom: 1px solid var(--rule); }
+  .row { grid-template-columns: 88px minmax(0, 1fr); }
+  .bar span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .box { transition: none; }
+}
+</style>
+
+<div class="wrap">
+  <header class="bar">
+    <img src="icon.png" alt="">
+    <strong>ローカル入力</strong>
+    <span>Mac / Windows の Chrome 拡張機能</span>
+  </header>
+
+  <section class="hero">
+    <div>
+      <p class="eyebrow">名簿 × 申込フォーム</p>
+      <h1><span class="ph">名簿の人を選んで、</span><span class="ph"><mark>ワンクリックで入力。</mark></span></h1>
+      <p class="lede">名簿のCSVを取り込んでおけば、あとは人を選んでボタンを押すだけ。名前・ふりがな・生年月日・住所・電話・メールを、申込や登録のフォームにまとめて入力します。</p>
+      <ul class="facts">
+        <li>データはパソコンの中だけ</li>
+        <li>外部への通信なし</li>
+        <li>Numbers / Excel のCSVに対応</li>
+      </ul>
+      <div class="dl-hero">
+        <button class="dl-btn" type="button" data-download>最新版をダウンロード</button>
+        <a class="dl-more" href="#download">インストールと更新のしかた</a>
+      </div>
+      <p class="dl-meta" data-release-meta>&nbsp;</p>
+    </div>
+
+    <div class="demo" aria-label="動作の見本">
+      <div class="demo-top"><i></i><i></i><i></i><span>example.jp/お問い合わせ</span></div>
+      <div class="demo-body">
+        <div class="roster">
+          <h3>名簿 <small>（見本）</small></h3>
+          <div id="people"></div>
+          <button class="fill-btn" id="fill" type="button">この人を入力</button>
+          <button class="next-btn" id="next" type="button">入力済みにして次へ</button>
+        </div>
+        <div class="form" id="form">
+          <div class="row"><div class="lab">お名前<span class="req">必須</span></div><div class="box" data-k="name"></div></div>
+          <div class="row"><div class="lab">ふりがな<span class="req">必須</span></div><div class="box" data-k="kana"></div></div>
+          <div class="row"><div class="lab">生まれた年</div><div class="box sel" data-k="year"></div></div>
+          <div class="row"><div class="lab">郵便番号<span class="req">必須</span></div><div class="zip"><span class="mono">〒</span><div class="box mono" data-k="zip1"></div><span>-</span><div class="box mono" data-k="zip2"></div></div></div>
+          <div class="row"><div class="lab">都道府県<span class="req">必須</span></div><div class="box sel" data-k="pref"></div></div>
+          <div class="row"><div class="lab">市区町村</div><div class="box" data-k="city"></div></div>
+          <div class="row"><div class="lab">番地・建物</div><div class="box" data-k="street"></div></div>
+          <div class="row"><div class="lab">電話番号</div><div class="box mono" data-k="tel"></div></div>
+        </div>
+      </div>
+      <p class="demo-note" id="note">名簿の人を選んで「この人を入力」を押してみてください。</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>使い方は3ステップ</h2>
+    <p class="sub">最初に名簿を取り込めば、あとはフォームを開くたびに人を選んで押すだけです。</p>
+    <ol class="steps">
+      <li><h3>名簿を取り込む</h3><p>Numbers や Excel で作った名簿をCSVで保存して取り込みます。「氏名」「フリガナ」「住所」が1列ずつでも自動で分け、読めなかった値は取り込み時に知らせます。</p></li>
+      <li><h3>人を選んで入力</h3><p>ツールバーのボタンから名前・ふりがな・電話番号で検索して選び、「この人をページに入力」。ショートカット <span class="mono">⌥⇧F</span> でも入力できます。</p></li>
+      <li><h3>確認して、次の人へ</h3><p>内容を確かめて自分で送信。「入力済みにして次の人へ」で次の未入力の人に進みます。進み具合は名簿画面で一覧できます。</p></li>
+    </ol>
+  </section>
+
+  <section class="block">
+    <h2>名簿はパソコンの外に出ません</h2>
+    <p class="sub">扱うのは他の人の個人情報なので、仕組みごと外に出さない作りにしています。</p>
+    <div class="privacy">
+      <div class="flow">
+        <svg viewBox="0 0 420 230" role="img" aria-label="名簿のデータはMacのChromeの中だけで使われ、外部のサーバーへの通信は止められている図">
+          <rect x="8" y="8" width="404" height="150" rx="14" fill="none" stroke="var(--rule)" stroke-width="2"/>
+          <text x="24" y="34" font-size="13" class="soft">あなたのMac（Chrome）</text>
+          <rect x="28" y="52" width="140" height="84" rx="10" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1.5"/>
+          <text x="98" y="88" font-size="15" text-anchor="middle" font-weight="700">ローカル入力</text>
+          <text x="98" y="112" font-size="12" text-anchor="middle" class="soft">名簿を保存</text>
+          <rect x="252" y="52" width="140" height="84" rx="10" fill="var(--sheet)" stroke="var(--rule)" stroke-width="1.5"/>
+          <text x="322" y="88" font-size="15" text-anchor="middle" font-weight="700">開いたフォーム</text>
+          <text x="322" y="112" font-size="12" text-anchor="middle" class="soft">押したタブだけ</text>
+          <line x1="172" y1="94" x2="240" y2="94" stroke="var(--green)" stroke-width="2.5"/>
+          <path d="M240 87 L250 94 L240 101 Z" fill="var(--green)"/>
+          <line x1="98" y1="140" x2="98" y2="196" stroke="var(--required)" stroke-width="2" stroke-dasharray="5 5"/>
+          <rect x="62" y="196" width="72" height="26" rx="6" fill="var(--sheet)" stroke="var(--rule)"/>
+          <text x="98" y="214" font-size="12" text-anchor="middle" class="soft">外部サーバー</text>
+          <circle cx="98" cy="170" r="11" fill="var(--sheet)" stroke="var(--required)" stroke-width="2"/>
+          <path d="M92 164 L104 176 M104 164 L92 176" stroke="var(--required)" stroke-width="2.2"/>
+          <text x="118" y="175" font-size="12" fill="var(--required)">通信できない設定</text>
+        </svg>
+      </div>
+      <ul class="points">
+        <li><div><b>保存先はChromeの中だけ</b><span>名簿は拡張機能の中に保存されます。クラウドやAIのサービスには送りません。</span></div></li>
+        <li><div><b>通信そのものを禁止</b><span>拡張機能のページはネットワークにつながらない設定にしてあり、仮にコードを書き換えてもChromeが止めます。</span></div></li>
+        <li><div><b>押したタブにだけ作用</b><span>ボタンを押したページ以外には触れません。ほかのサイトを読み取る権限も持っていません。</span></div></li>
+        <li><div><b>見えない欄には入れない</b><span>透明な欄や画面の外に隠した欄には入力しません。名前だけ聞くふりをして住所や電話番号を抜き取るページへの対策です。</span></div></li>
+        <li><div><b>送信は自分で</b><span>送信ボタンは押しません。入力内容を確認してから、ご自身で送信してください。</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>日本のフォームに合わせた入力</h2>
+    <p class="sub">欄のラベルや並び方から、何を入れる欄かを判定します。名簿の形式とフォームの形式が違っても、欄に合わせて変換します。</p>
+    <div class="chips">
+      <div class="chip"><b>姓と名が別の欄</b><span class="ex">山田 太郎 → [<em>山田</em>] [<em>太郎</em>]</span></div>
+      <div class="chip"><b>郵便番号の分割</b><span class="ex">150-0001 → 〒[<em>150</em>]-[<em>0001</em>]</span></div>
+      <div class="chip"><b>ひらがな・カタカナ</b><span class="ex">やまだ → フリガナ欄には<em>ヤマダ</em></span></div>
+      <div class="chip"><b>和暦の生年月日</b><span class="ex">平成2年4月1日 → <em>1990</em>年<em>4</em>月<em>1</em>日</span></div>
+      <div class="chip"><b>電話番号の3分割</b><span class="ex">09012345678 → [<em>090</em>]-[<em>1234</em>]-[<em>5678</em>]</span></div>
+      <div class="chip"><b>「全角で」の指定</b><span class="ex">1-2-3 → <em>１－２－３</em></span></div>
+      <div class="chip"><b>住所のまとめ・分け</b><span class="ex">都道府県＋市区町村＋番地 → 1つの欄にも</span></div>
+      <div class="chip"><b>関係ない欄は空けておく</b><span class="ex">件名・物件名・お問い合わせ内容</span></div>
+      <div class="chip"><b>前の人の情報は書き換え</b><span class="ex">鈴木 花子 → <em>高橋 一郎</em>（手入力の値は残す）</span></div>
+      <div class="chip"><b>初期値も直す</b><span class="ex">都道府県が最初から「東京都」→ <em>北海道</em></span></div>
+      <div class="chip"><b>入力するフォームを選ぶ</b><span class="ex">ログイン欄・メルマガ欄には入れない</span></div>
+      <div class="chip"><b>間違えた欄は覚え直す</b><span class="ex">サイトごとに割り当てを保存</span></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>画面</h2>
+    <div class="shots">
+      <figure><img src="popup.png" alt="ポップアップ画面。名簿の検索欄、人の一覧、この人をページに入力ボタン、入力済みにして次の人へボタン" loading="lazy"><figcaption>ツールバーのボタンから開くポップアップ。検索して選び、入力します。</figcaption></figure>
+      <figure><img src="options.png" alt="名簿画面。CSVの取り込みと書き出しのボタン、入力済みか未入力かの状態つきの名簿一覧" loading="lazy"><figcaption>名簿画面。CSVの取り込み・書き出しと、入力済みの管理ができます。</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>苦手なこと</h2>
+    <p class="sub">入らない欄があっても、ポップアップの「欄の割り当てを確認」で直せる場合があります。</p>
+    <ul class="limits">
+      <li>別サービスの埋め込みフォーム<span>HubSpot・formrun などの埋め込みや、カード決済欄</span></li>
+      <li>見た目だけの独自プルダウン<span>普通の選択欄でないものは選べません</span></li>
+      <li>複数ページに分かれたフォーム<span>ページごとにボタンを押せば入ります</span></li>
+      <li>名簿にない項目<span>ローマ字の名前、半角カナ、年齢、職業など</span></li>
+      <li>画像認証（CAPTCHA）<span>人が操作する前提のものには触れません</span></li>
+      <li>クレジットカード・パスワード<span>安全のため、あえて対象外にしています</span></li>
+    </ul>
+  </section>
+
+  <section class="block" id="download">
+    <h2>ダウンロードとはじめかた</h2>
+    <p class="sub">このページはいつも最新版になっています。新しい版が出たら、同じページからもう一度ダウンロードしてください。</p>
+    <div class="dl-card">
+      <div>
+        <p class="dl-card-title">ローカル入力 <span class="mono" data-release-version>…</span></p>
+        <p class="dl-meta" data-release-meta>&nbsp;</p>
+        <p class="dl-contents">中身：拡張機能のフォルダ（<code>local-autofill-extension</code>）・手順書（はじめにお読みください.html）・名簿のひな形CSV</p>
+      </div>
+      <button class="dl-btn" type="button" data-download>ダウンロード</button>
+    </div>
+    <p class="dl-status" id="dl-status" role="status" aria-live="polite"></p>
+
+    <div class="start">
+      <div>
+        <h3>はじめて使うとき</h3>
+        <ol>
+          <li>ダウンロードした zip をダブルクリックして展開し、できたフォルダを「書類」など消さない場所に置きます。</li>
+          <li>Chrome で <code>chrome://extensions</code> を開き、右上の「デベロッパー モード」をオンにします。</li>
+          <li>「パッケージ化されていない拡張機能を読み込む」で、フォルダの中の <code>local-autofill-extension</code> を選びます。</li>
+          <li>開いた名簿画面で名簿のCSVを取り込みます（ひな形CSVも同じフォルダに入っています）。</li>
+        </ol>
+        <h3>新しい版に更新するとき</h3>
+        <ol>
+          <li>このページから最新版をダウンロードして展開します。</li>
+          <li>いま使っている <code>local-autofill-extension</code> フォルダの<b>中身</b>を、新しいものの中身に入れ替えます。フォルダ自体の場所や名前は変えません。</li>
+          <li><code>chrome://extensions</code> の「ローカル入力」にある 🔄（更新）ボタンを押します。名簿はそのまま残ります。</li>
+        </ol>
+        <p class="hint-line">いま使っている版は、<code>chrome://extensions</code> の「ローカル入力」の欄に表示されています。</p>
+      </div>
+      <div class="need">
+        <b>必要なもの</b>
+        <span>Chrome が入ったパソコン（Mac / Windows）。ほかに何もインストールしません。</span>
+        <span>名簿は他の人の個人情報です。Mac では FileVault（ディスクの暗号化）をオンにしておくと安心です。</span>
+        <span>このページから受け取るのは拡張機能だけです。名簿のデータがこのページを通ることはありません。</span>
+      </div>
+    </div>
+
+    <h3 class="log-title">更新履歴</h3>
+    <ol class="changelog" id="changelog"></ol>
+  </section>
+
+  <footer>ローカル入力 <span data-release-version>…</span> ・ 詳しい手順はダウンロードした zip の中の「はじめにお読みください」をご覧ください。</footer>
+</div>
+
+<script src="release.js"></script>
+<script>
+// ---------- ダウンロード ----------
+(() => {
+  const r = window.RELEASE;
+  const status = document.getElementById('dl-status');
+  const say = (text, error = false) => { status.textContent = text; status.classList.toggle('error', error); };
+  if (!r) {
+    document.querySelectorAll('[data-download]').forEach((b) => { b.disabled = true; b.hidden = true; });
+    say('ダウンロードの準備ができていません。少し待ってから開き直してください。', true);
+    return;
+  }
+  const kb = Math.max(1, Math.round(r.size / 1024));
+  const [y, m, d] = r.date.split('-').map(Number);
+  document.querySelectorAll('[data-release-version]').forEach((e) => { e.textContent = `v${r.version}`; });
+  document.querySelectorAll('[data-release-meta]').forEach((e) => { e.textContent = `v${r.version} ・ ${y}年${m}月${d}日更新 ・ ${kb}KB の zip`; });
+  const log = document.getElementById('changelog');
+  for (const n of r.notes) {
+    const li = document.createElement('li');
+    const ver = document.createElement('div');
+    ver.className = 'ver';
+    ver.textContent = `v${n.version}`;
+    const date = document.createElement('small');
+    const [ny, nm, nd] = n.date.split('-').map(Number);
+    date.textContent = `${ny}/${nm}/${nd}`;
+    ver.append(date);
+    const ul = document.createElement('ul');
+    for (const it of n.items) { const i = document.createElement('li'); i.textContent = it; ul.append(i); }
+    li.append(ver, ul);
+    log.append(li);
+  }
+
+  const bytes = () => Uint8Array.from(atob(r.b64), (c) => c.charCodeAt(0));
+  const MESSAGES = {
+    declined: 'ダウンロードを取りやめました。',
+    rate_limited: '確認の画面がすでに開いています。そちらで保存してください。',
+    extension_not_enabled: 'この画面では zip を保存できません。claude.ai でこのページを開き直してください。',
+  };
+  const downloadsReady = window.claude?.use ? window.claude.use('downloads') : Promise.resolve(null);
+  document.querySelectorAll('[data-download]').forEach((btn) => btn.addEventListener('click', async () => {
+    btn.setAttribute('aria-busy', 'true');
+    say('');
+    try {
+      const downloads = await downloadsReady;
+      if (!downloads) {
+        say('この画面ではダウンロードできません。パソコンのブラウザでこのページのリンクを開き直してください。', true);
+        return;
+      }
+      await downloads.save({ filename: r.filename, data: new Blob([bytes()], { type: 'application/zip' }) });
+      say(`「${r.filename}」を保存しました。ダブルクリックで展開してください。`);
+    } catch (e) {
+      say(MESSAGES[e?.code] || 'ダウンロードできませんでした。ページを開き直してお試しください。', e?.code !== 'declined');
+    } finally {
+      btn.removeAttribute('aria-busy');
+    }
+  }));
+})();
+</script>
+<script>
+(() => {
+  // 見本の名簿（架空の人物）
+  const people = [
+    { name: '山田 太郎', kana: 'やまだ たろう', year: '1989年（平成元年）', zip: ['150', '0001'], pref: '東京都', city: '渋谷区', street: '神宮前1-2-3 青山ハイツ101', tel: '090-1234-5678' },
+    { name: '鈴木 花子', kana: 'すずき はなこ', year: '1990年（平成2年）', zip: ['060', '0001'], pref: '北海道', city: '札幌市中央区', street: '北一条西2-1', tel: '03-1234-5678' },
+    { name: '佐藤 次郎', kana: 'さとう じろう', year: '1985年（昭和60年）', zip: ['530', '0001'], pref: '大阪府', city: '大阪市北区', street: '梅田1-1-1 梅田ビル5F', tel: '080-1111-2222' },
+  ];
+  const done = new Set();
+  let current = 0;
+  let timers = [];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const list = document.getElementById('people');
+  const boxes = [...document.querySelectorAll('#form .box')];
+  const note = document.getElementById('note');
+
+  function renderPeople() {
+    list.replaceChildren(...people.map((p, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'person';
+      b.setAttribute('aria-pressed', String(i === current));
+      b.innerHTML = `${done.has(i) ? '<span class="done">✓ 入力済み</span>' : ''}<strong></strong><span></span>`;
+      b.querySelector('strong').textContent = p.name;
+      b.lastElementChild.textContent = p.kana;
+      b.addEventListener('click', () => { current = i; renderPeople(); note.textContent = `${p.name}さんを選びました。「この人を入力」を押してください。`; });
+      return b;
+    }));
+  }
+
+  function valuesOf(p) {
+    return { name: p.name, kana: p.kana, year: p.year, zip1: p.zip[0], zip2: p.zip[1], pref: p.pref, city: p.city, street: p.street, tel: p.tel };
+  }
+
+  function fill(animate) {
+    timers.forEach(clearTimeout);
+    timers = [];
+    const v = valuesOf(people[current]);
+    boxes.forEach((b) => { b.textContent = ''; b.classList.remove('on'); });
+    boxes.forEach((b, i) => {
+      const put = () => { b.textContent = v[b.dataset.k]; b.classList.add('on'); };
+      if (animate && !reduce) timers.push(setTimeout(put, 90 * i)); else put();
+    });
+    timers.push(setTimeout(() => boxes.forEach((b) => b.classList.remove('on')), animate && !reduce ? 90 * boxes.length + 1600 : 1600));
+    note.innerHTML = `<b>${boxes.length}個の欄に入力しました。</b> 内容を確認して、送信はご自身で。`;
+  }
+
+  document.getElementById('fill').addEventListener('click', () => fill(true));
+  document.getElementById('next').addEventListener('click', () => {
+    done.add(current);
+    const next = people.findIndex((_, i) => !done.has(i));
+    if (next === -1) { done.clear(); current = 0; note.textContent = '全員入力済みになりました（見本なので最初に戻します）。'; }
+    else { current = next; note.textContent = `次は${people[current].name}さんです。「この人を入力」を押してください。`; }
+    boxes.forEach((b) => { b.textContent = ''; });
+    renderPeople();
+  });
+
+  renderPeople();
+  fill(false);
+  note.innerHTML = '<b>見本：</b>名簿の人を選んで「この人を入力」を押してみてください。';
+})();
+</script>
