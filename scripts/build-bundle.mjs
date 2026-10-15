@@ -18,7 +18,7 @@ await fs.cp(path.join(repo, 'docs/practice'), path.join(top, '練習用'), { rec
 let md = await fs.readFile(`${repo}/docs/INSTALL_mac.md`, 'utf8');
 md = md.replace(/## 1\. ファイルを置く[\s\S]*?(?=## 2\.)/, `## 1. ファイルを置く
 
-1. 受け取ったファイル（\`ローカル入力_v${version}.zip\`）をダブルクリックして展開します。
+1. ダウンロードした zip ファイル（\`local-autofill-v${version}.zip\` など）をダブルクリックして展開します。
 2. できた「local-autofill-v${version}」フォルダの中に、次のものが入っています。
    - \`local-autofill-extension\` … 拡張機能の本体（このフォルダを Chrome に読み込みます）
    - \`はじめにお読みください.html\` … この手順書

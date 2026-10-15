@@ -49,6 +49,14 @@ npm run bundle   # dist/ローカル入力_v<version>.zip（拡張機能フォ�
 
 拡張機能だけの zip は `npm run zip`（`dist/local-autofill-<version>.zip`）。
 
+ダウンロードページ（docs/site/）を更新するとき:
+
+```sh
+npm run site -- ../link   # docs/site/release.js を作り、link リポジトリの local-autofill/ に zip を置く
+```
+
+zip は link リポジトリの GitHub Pages（https://princetottino10-bit.github.io/link/local-autofill/）から配る。link リポジトリ側の変更をマージしてから、ページを公開し直す。
+
 ## 開発
 
 ```sh

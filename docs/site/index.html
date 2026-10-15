@@ -143,7 +143,7 @@ section.block { padding-block: 52px; border-top: 1px solid var(--rule); }
 .dl-btn { all: unset; cursor: pointer; background: var(--green); color: var(--sheet); font-family: var(--display); font-weight: 700; font-size: 16px; padding: 12px 22px; border-radius: 10px; text-align: center; }
 .dl-btn:hover { filter: brightness(1.08); }
 .dl-btn:focus-visible { outline: 3px solid var(--marker); outline-offset: 2px; }
-.dl-btn[aria-busy="true"] { opacity: .7; cursor: progress; }
+.dl-btn { display: inline-block; text-decoration: none; }
 .dl-more { color: var(--green); font-size: 14px; }
 .dl-meta { margin-top: 8px; font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .dl-card { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; margin-top: 24px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; padding: 18px 20px; }
@@ -200,7 +200,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 22px; font-size: 13px; 
         <li>Numbers / Excel のCSVに対応</li>
       </ul>
       <div class="dl-hero">
-        <button class="dl-btn" type="button" data-download>最新版をダウンロード</button>
+        <a class="dl-btn" data-download href="https://princetottino10-bit.github.io/link/local-autofill/local-autofill-latest.zip" target="_blank" rel="noopener">最新版をダウンロード</a>
         <a class="dl-more" href="#download">インストールと更新のしかた</a>
       </div>
       <p class="dl-meta" data-release-meta>&nbsp;</p>
@@ -324,7 +324,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 22px; font-size: 13px; 
         <p class="dl-meta" data-release-meta>&nbsp;</p>
         <p class="dl-contents">中身：拡張機能のフォルダ（<code>local-autofill-extension</code>）・手順書（はじめにお読みください.html）・名簿のひな形CSV・練習用のフォームと架空の名簿</p>
       </div>
-      <button class="dl-btn" type="button" data-download>ダウンロード</button>
+      <a class="dl-btn" data-download href="https://princetottino10-bit.github.io/link/local-autofill/local-autofill-latest.zip" target="_blank" rel="noopener">ダウンロード</a>
     </div>
     <p class="dl-status" id="dl-status" role="status" aria-live="polite"></p>
 
@@ -368,8 +368,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 22px; font-size: 13px; 
   const status = document.getElementById('dl-status');
   const say = (text, error = false) => { status.textContent = text; status.classList.toggle('error', error); };
   if (!r) {
-    document.querySelectorAll('[data-download]').forEach((b) => { b.disabled = true; b.hidden = true; });
-    say('ダウンロードの準備ができていません。少し待ってから開き直してください。', true);
+    say('最新版の情報を読み込めませんでした。ボタンからは最新版をダウンロードできます。');
     return;
   }
   const kb = Math.max(1, Math.round(r.size / 1024));
@@ -392,30 +391,13 @@ footer { border-top: 1px solid var(--rule); padding-top: 22px; font-size: 13px; 
     log.append(li);
   }
 
-  const bytes = () => Uint8Array.from(atob(r.b64), (c) => c.charCodeAt(0));
-  const MESSAGES = {
-    declined: 'ダウンロードを取りやめました。',
-    rate_limited: '確認の画面がすでに開いています。そちらで保存してください。',
-    extension_not_enabled: 'この画面では zip を保存できません。claude.ai でこのページを開き直してください。',
-  };
-  const downloadsReady = window.claude?.use ? window.claude.use('downloads') : Promise.resolve(null);
-  document.querySelectorAll('[data-download]').forEach((btn) => btn.addEventListener('click', async () => {
-    btn.setAttribute('aria-busy', 'true');
-    say('');
-    try {
-      const downloads = await downloadsReady;
-      if (!downloads) {
-        say('この画面ではダウンロードできません。パソコンのブラウザでこのページのリンクを開き直してください。', true);
-        return;
-      }
-      await downloads.save({ filename: r.filename, data: new Blob([bytes()], { type: 'application/zip' }) });
-      say(`「${r.filename}」を保存しました。ダブルクリックで展開してください。`);
-    } catch (e) {
-      say(MESSAGES[e?.code] || 'ダウンロードできませんでした。ページを開き直してお試しください。', e?.code !== 'declined');
-    } finally {
-      btn.removeAttribute('aria-busy');
-    }
-  }));
+  // ダウンロードは公開の置き場所（GitHub Pages）から。リンクは新しいタブで開き、ブラウザが zip を保存する
+  document.querySelectorAll('[data-download]').forEach((a) => {
+    a.href = r.url;
+    a.addEventListener('click', () => {
+      say(`新しいタブで「${r.downloadName}」のダウンロードが始まります。始まらないときは、もう一度押してください。`);
+    });
+  });
 })();
 </script>
 <script>
