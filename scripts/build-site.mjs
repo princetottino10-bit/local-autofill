@@ -1,12 +1,14 @@
-// 紹介・ダウンロードページ用のデータ（docs/site/release.js）を作り、
-// 配布セットの zip を公開の置き場所（link リポジトリの GitHub Pages）にコピーする。
-//   npm run site -- ../link   … link リポジトリの local-autofill/ に zip を置く
+// 紹介・ダウンロードページ用のデータ（docs/site/release.js）を作る。
+// 配布セットの zip は Google ドライブの配布用フォルダに置き、ページのボタンはそのフォルダを開く。
+//   npm run site            … release.js を作る（zip は dist/ にできるので、ドライブのフォルダにアップロードする）
+//   npm run site -- ../link … あわせて link リポジトリの local-autofill/ にも zip を置く（GitHub Pages で配る場合）
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const PAGES_URL = 'https://princetottino10-bit.github.io/link/local-autofill/';
+const DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/1yWen1HQb3bNyKWE5BZFTnrI5vW9NSoub';
 const repo = fileURLToPath(new URL('..', import.meta.url));
 const pagesRepo = process.argv[2];
 
@@ -28,7 +30,7 @@ if (pagesRepo) {
 
 const release = {
   version, date: notes[0].date, size: zip.length, notes,
-  url: PAGES_URL + versioned, latestUrl: PAGES_URL + 'local-autofill-latest.zip', downloadName: versioned,
+  url: DRIVE_FOLDER_URL, downloadName: versioned,
 };
 await fs.writeFile(path.join(repo, 'docs/site/release.js'), `window.RELEASE = ${JSON.stringify(release)};\n`);
 console.log(`docs/site/release.js（v${version}, ${Math.round(zip.length / 1024)}KB）`);

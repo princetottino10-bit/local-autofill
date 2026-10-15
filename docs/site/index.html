@@ -200,7 +200,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 22px; font-size: 13px; 
         <li>Numbers / Excel のCSVに対応</li>
       </ul>
       <div class="dl-hero">
-        <a class="dl-btn" data-download href="https://princetottino10-bit.github.io/link/local-autofill/local-autofill-latest.zip" target="_blank" rel="noopener">最新版をダウンロード</a>
+        <a class="dl-btn" data-download href="https://drive.google.com/drive/folders/1yWen1HQb3bNyKWE5BZFTnrI5vW9NSoub" target="_blank" rel="noopener">最新版をダウンロード</a>
         <a class="dl-more" href="#download">インストールと更新のしかた</a>
       </div>
       <p class="dl-meta" data-release-meta>&nbsp;</p>
@@ -324,7 +324,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 22px; font-size: 13px; 
         <p class="dl-meta" data-release-meta>&nbsp;</p>
         <p class="dl-contents">中身：拡張機能のフォルダ（<code>local-autofill-extension</code>）・手順書（はじめにお読みください.html）・名簿のひな形CSV・練習用のフォームと架空の名簿</p>
       </div>
-      <a class="dl-btn" data-download href="https://princetottino10-bit.github.io/link/local-autofill/local-autofill-latest.zip" target="_blank" rel="noopener">ダウンロード</a>
+      <a class="dl-btn" data-download href="https://drive.google.com/drive/folders/1yWen1HQb3bNyKWE5BZFTnrI5vW9NSoub" target="_blank" rel="noopener">ダウンロード</a>
     </div>
     <p class="dl-status" id="dl-status" role="status" aria-live="polite"></p>
 
@@ -332,14 +332,14 @@ footer { border-top: 1px solid var(--rule); padding-top: 22px; font-size: 13px; 
       <div>
         <h3>はじめて使うとき</h3>
         <ol>
-          <li>ダウンロードした zip をダブルクリックして展開し、できたフォルダを「書類」など消さない場所に置きます。</li>
+          <li>「ダウンロード」を押すと Google ドライブのフォルダが開きます。いちばん新しい版の zip（<code data-release-file>local-autofill-v…</code>）をダウンロードし、ダブルクリックして展開して、できたフォルダを「書類」など消さない場所に置きます。</li>
           <li>Chrome で <code>chrome://extensions</code> を開き、右上の「デベロッパー モード」をオンにします。</li>
           <li>「パッケージ化されていない拡張機能を読み込む」で、フォルダの中の <code>local-autofill-extension</code> を選びます。</li>
           <li>開いた名簿画面で名簿のCSVを取り込みます（ひな形CSVも同じフォルダに入っています）。</li>
         </ol>
         <h3>新しい版に更新するとき</h3>
         <ol>
-          <li>このページから最新版をダウンロードして展開します。</li>
+          <li>このページの「ダウンロード」から Google ドライブのフォルダを開き、いちばん新しい版の zip をダウンロードして展開します。</li>
           <li>いま使っている <code>local-autofill-extension</code> フォルダの<b>中身</b>を、新しいものの中身に入れ替えます。フォルダ自体の場所や名前は変えません。</li>
           <li><code>chrome://extensions</code> の「ローカル入力」にある 🔄（更新）ボタンを押します。名簿はそのまま残ります。</li>
         </ol>
@@ -374,6 +374,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 22px; font-size: 13px; 
   const kb = Math.max(1, Math.round(r.size / 1024));
   const [y, m, d] = r.date.split('-').map(Number);
   document.querySelectorAll('[data-release-version]').forEach((e) => { e.textContent = `v${r.version}`; });
+  document.querySelectorAll('[data-release-file]').forEach((e) => { e.textContent = r.downloadName; });
   document.querySelectorAll('[data-release-meta]').forEach((e) => { e.textContent = `v${r.version} ・ ${y}年${m}月${d}日更新 ・ ${kb}KB の zip`; });
   const log = document.getElementById('changelog');
   for (const n of r.notes) {
@@ -391,11 +392,11 @@ footer { border-top: 1px solid var(--rule); padding-top: 22px; font-size: 13px; 
     log.append(li);
   }
 
-  // ダウンロードは公開の置き場所（GitHub Pages）から。リンクは新しいタブで開き、ブラウザが zip を保存する
+  // ダウンロードは Google ドライブの配布用フォルダから（新しいタブで開く）
   document.querySelectorAll('[data-download]').forEach((a) => {
     a.href = r.url;
     a.addEventListener('click', () => {
-      say(`新しいタブで「${r.downloadName}」のダウンロードが始まります。始まらないときは、もう一度押してください。`);
+      say(`Google ドライブのフォルダが新しいタブで開きます。いちばん新しい「${r.downloadName}」を選んで、右上の ⬇（ダウンロード）を押してください。`);
     });
   });
 })();
