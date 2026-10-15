@@ -160,15 +160,20 @@ export function recordsFromCSV(text) {
   if (!keys.some((k) => k === 'name' || k === 'last_name')) {
     throw new Error('「氏名」または「姓」の列が見つかりません。1行目に見出しを入れてください');
   }
-  const unknown = rows[0].filter((h, i) => h.trim() && !keys[i]);
+  const unknown = rows[0].filter((h, i) => h.trim() && !keys[i]).map((h) => h.trim());
   // 同じ項目に当たる列が複数あるとき（電話番号と携帯電話など）は左の列を優先し、空なら次の列を使う
   const duplicated = [];
   keys.forEach((k, i) => {
     const first = keys.indexOf(k);
     if (k && first !== i) duplicated.push(`「${rows[0][i].trim()}」は「${rows[0][first].trim()}」が空のときだけ使います`);
   });
+  // 決まった項目に当たらない列と、2つ目以降の重複列は「名簿の列」として見出しごと保存する
+  // （フォームに同じ名前の欄があれば自動で入力し、違う名前の欄には割り当てで指定できる）
+  const extraIdx = rows[0].map((h, i) => i).filter((i) => rows[0][i].trim() && (!keys[i] || keys.indexOf(keys[i]) !== i));
   const warnings = { noSpaceName: [], badBirth: [], badAddress: [] };
   const records = rows.slice(1).map((row) => {
+    const columns = {};
+    for (const i of extraIdx) if (row[i] != null && row[i].trim() !== '') columns[rows[0][i].trim()] = row[i].trim();
     const raw = {};
     keys.forEach((k, i) => { if (k && !raw[k] && row[i] != null && row[i].trim() !== '') raw[k] = row[i].trim(); });
     const d = Object.fromEntries(DATA_KEYS.map((k) => [k, raw[k] || '']));
@@ -191,7 +196,7 @@ export function recordsFromCSV(text) {
     d.phone = normalizePhone(d.phone);
     d.zip = normalizeZip(d.zip);
     const doneAt = raw.doneAt && !/^(未|未入力|no|false|0|-)$/i.test(raw.doneAt) ? raw.doneAt : null;
-    return { name: displayName(d), data: d, memo: raw.memo || '', doneAt };
+    return { name: displayName(d), data: d, columns, memo: raw.memo || '', doneAt };
   }).filter((r) => r.data.last_name || r.data.first_name);
   return { records, unknown, duplicated, warnings };
 }
@@ -222,9 +227,19 @@ export const EXPORT_COLUMNS = [
 const esc = (v) => (/[",\r\n]/.test(v ?? '') ? `"${String(v).replace(/"/g, '""')}"` : v ?? '');
 
 // Excel で文字化けしないよう BOM 付き UTF-8
+// 名簿全体に出てくる「名簿の列」の見出し（出てきた順）
+export function columnNames(records) {
+  const names = [];
+  for (const r of records) for (const k of Object.keys(r.columns || {})) if (!names.includes(k)) names.push(k);
+  return names;
+}
+
 export function toCSV(records) {
-  const lines = [EXPORT_COLUMNS.map(([h]) => h).join(',')];
-  for (const r of records) lines.push(EXPORT_COLUMNS.map(([, f]) => esc(f(r))).join(','));
+  const extra = columnNames(records);
+  const lines = [[...EXPORT_COLUMNS.map(([h]) => h), ...extra].map(esc).join(',')];
+  for (const r of records) {
+    lines.push([...EXPORT_COLUMNS.map(([, f]) => f(r)), ...extra.map((k) => r.columns?.[k] ?? '')].map(esc).join(','));
+  }
   return '﻿' + lines.join('\r\n') + '\r\n';
 }
 
